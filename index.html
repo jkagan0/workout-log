@@ -167,13 +167,15 @@
                 <p class="text-sm text-gray" id="workoutInfo"></p>
             </div>
             <div style="text-align: center;">
-                <div class="timer" id="timerDisplay">1:30</div>
+                <div class="timer" id="timerDisplay" onclick="toggleTimer()" style="cursor: pointer;" title="Click to start/pause">1:30</div>
                 <div class="flex gap-2" style="margin-top: 0.5rem; justify-content: center;">
-                    <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="toggleTimer()">⏯</button>
                     <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="resetTimer()">↻</button>
                 </div>
             </div>
         </div>
+        
+        <!-- Previous Workouts History -->
+        <div id="previousWorkouts" class="mb-4"></div>
         
         <div id="exerciseList"></div>
         
@@ -201,9 +203,42 @@
     <div id="historyScreen" class="container hidden">
         <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
             <h1 class="title-text" style="font-size: 2rem;">Activity</h1>
-            <button class="btn btn-secondary" onclick="showHome()">Back</button>
+            <div class="flex gap-2">
+                <button class="btn btn-primary" onclick="showPastWorkoutSelector()">+ Past Workout</button>
+                <button class="btn btn-secondary" onclick="exportData()" style="padding: 0.5rem 1rem;">Export</button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="padding: 0.5rem 1rem;">Import</button>
+                <button class="btn btn-secondary" onclick="showHome()">Back</button>
+            </div>
         </div>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
         <div id="historyContent"></div>
+    </div>
+    
+    <!-- Past Workout Date Selector Modal -->
+    <div id="pastWorkoutModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 0.5rem; max-width: 500px; width: 90%;">
+            <h2 class="font-bold mb-4" style="font-size: 1.5rem;">Log Past Workout</h2>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Date</label>
+                <input type="date" id="pastWorkoutDate" style="width: 100%;">
+            </div>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Time</label>
+                <input type="time" id="pastWorkoutTime" style="width: 100%;">
+            </div>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Workout Type</label>
+                <div id="pastWorkoutTypes" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closePastWorkoutModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="startPastWorkout()">Continue</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -230,6 +265,9 @@
         let workoutStartTime = null;
         let viewingMonth = new Date().getMonth();
         let viewingYear = new Date().getFullYear();
+        let isPastWorkout = false;
+        let selectedPastDate = null;
+        let selectedPastType = null;
         
         // Initialize
         document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -255,13 +293,81 @@
         function startWorkout(type) {
             currentWorkout = type;
             exercises = [];
-            workoutStartTime = new Date();
+            
+            // Use selected past date or current time
+            workoutStartTime = isPastWorkout ? selectedPastDate : new Date();
+            
             document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('historyScreen').classList.add('hidden');
             document.getElementById('workoutScreen').classList.remove('hidden');
             document.getElementById('workoutColorDot').style.background = type.color;
             document.getElementById('workoutTitle').textContent = type.label;
             updateWorkoutInfo();
+            renderPreviousWorkouts();
             renderExerciseList();
+        }
+        
+        function renderPreviousWorkouts() {
+            const container = document.getElementById('previousWorkouts');
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            
+            // Filter workouts of the same type and get last 3
+            const sameTypeWorkouts = history
+                .filter(w => w.type === currentWorkout.id)
+                .reverse()
+                .slice(0, 3);
+            
+            if (sameTypeWorkouts.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = '<div class="exercise-box"><h3 class="font-bold mb-2">Previous Workouts</h3></div>';
+            const boxDiv = container.querySelector('.exercise-box');
+            
+            sameTypeWorkouts.forEach(workout => {
+                const start = new Date(workout.startTime);
+                const end = new Date(workout.endTime);
+                const duration = Math.floor((end - start) / 60000);
+                
+                const workoutDiv = document.createElement('div');
+                workoutDiv.style.cssText = 'border: 1px solid #e2e8f0; padding: 0.75rem; margin-top: 0.75rem; border-radius: 0.25rem; background: #f8fafc;';
+                workoutDiv.innerHTML = `
+                    <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
+                        <p class="text-sm font-bold">${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p class="text-xs text-gray">${duration} min • ${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</p>
+                    </div>
+                    <div class="text-sm">
+                        ${workout.exercises.map(ex => {
+                            const isCardio = workout.type === 'cardio';
+                            if (isCardio) {
+                                const details = ex.sets.map(s => {
+                                    const parts = [];
+                                    if (s.time) parts.push(`${s.time} min`);
+                                    if (s.distance) parts.push(`${s.distance} mi`);
+                                    if (s.speed) parts.push(`${s.speed} mph`);
+                                    if (s.incline) parts.push(`${s.incline}% incline`);
+                                    return parts.join(', ');
+                                }).filter(Boolean).join(' | ');
+                                return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
+                            } else {
+                                // Format: reps (weight), reps (weight), etc.
+                                const setDetails = ex.sets.map(s => {
+                                    if (s.reps && s.weight) {
+                                        return `${s.reps} (${s.weight})`;
+                                    } else if (s.reps) {
+                                        return s.reps;
+                                    } else {
+                                        return '';
+                                    }
+                                }).filter(Boolean).join(', ');
+                                return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+                boxDiv.appendChild(workoutDiv);
+            });
         }
         
         function updateWorkoutInfo() {
@@ -430,21 +536,37 @@
         }
         
         function finishWorkout() {
+            // Calculate end time based on whether this is a past workout
+            let endTime;
+            if (isPastWorkout) {
+                // For past workouts, add a default 45 minute duration
+                endTime = new Date(workoutStartTime.getTime() + 45 * 60000);
+            } else {
+                endTime = new Date();
+            }
+            
             const workout = {
                 type: currentWorkout.id,
                 startTime: workoutStartTime.toISOString(),
-                endTime: new Date().toISOString(),
+                endTime: endTime.toISOString(),
                 exercises: exercises
             };
             
             try {
                 const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
                 history.push(workout);
+                // Sort by date
+                history.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
                 localStorage.setItem('workoutHistory', JSON.stringify(history));
                 alert('Workout saved!');
             } catch (e) {
                 alert('Could not save workout');
             }
+            
+            // Reset past workout flags
+            isPastWorkout = false;
+            selectedPastDate = null;
+            selectedPastType = null;
             
             showHome();
         }
@@ -455,9 +577,73 @@
             document.getElementById('homeScreen').classList.remove('hidden');
             currentWorkout = null;
             exercises = [];
+            isPastWorkout = false;
+            selectedPastDate = null;
+            selectedPastType = null;
             // Reset to current month when going home
             viewingMonth = new Date().getMonth();
             viewingYear = new Date().getFullYear();
+        }
+        
+        function showPastWorkoutSelector() {
+            const modal = document.getElementById('pastWorkoutModal');
+            const now = new Date();
+            
+            // Set default date to today
+            document.getElementById('pastWorkoutDate').value = now.toISOString().split('T')[0];
+            document.getElementById('pastWorkoutTime').value = now.toTimeString().slice(0, 5);
+            
+            // Render workout type buttons
+            const typesContainer = document.getElementById('pastWorkoutTypes');
+            typesContainer.innerHTML = '';
+            
+            WORKOUT_TYPES.forEach(type => {
+                const button = document.createElement('button');
+                button.className = 'btn btn-secondary';
+                button.style.cssText = 'text-align: left; padding: 1rem;';
+                button.innerHTML = `
+                    <div class="flex gap-2" style="align-items: center;">
+                        <span class="color-dot" style="background: ${type.color};"></span>
+                        <span>${type.label}</span>
+                    </div>
+                `;
+                button.onclick = () => {
+                    selectedPastType = type;
+                    // Highlight selected
+                    typesContainer.querySelectorAll('button').forEach(b => b.style.border = '2px solid #cbd5e1');
+                    button.style.border = `2px solid ${type.color}`;
+                };
+                typesContainer.appendChild(button);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closePastWorkoutModal() {
+            document.getElementById('pastWorkoutModal').classList.add('hidden');
+            selectedPastType = null;
+        }
+        
+        function startPastWorkout() {
+            if (!selectedPastType) {
+                alert('Please select a workout type');
+                return;
+            }
+            
+            const dateStr = document.getElementById('pastWorkoutDate').value;
+            const timeStr = document.getElementById('pastWorkoutTime').value;
+            
+            if (!dateStr || !timeStr) {
+                alert('Please select both date and time');
+                return;
+            }
+            
+            // Combine date and time
+            selectedPastDate = new Date(`${dateStr}T${timeStr}`);
+            isPastWorkout = true;
+            
+            closePastWorkoutModal();
+            startWorkout(selectedPastType);
         }
         
         function previousMonth() {
@@ -615,9 +801,17 @@
                                     }).filter(Boolean).join(' | ');
                                     return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
                                 } else {
-                                    const reps = ex.sets.map(s => s.reps).filter(Boolean).join(', ') || '—';
-                                    const weights = ex.sets.some(s => s.weight) ? ` @ ${ex.sets.map(s => s.weight).filter(Boolean).join(', ')} lbs` : '';
-                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${ex.sets.length} × ${reps} reps${weights}</div>`;
+                                    // Format: reps (weight), reps (weight), etc.
+                                    const setDetails = ex.sets.map(s => {
+                                        if (s.reps && s.weight) {
+                                            return `${s.reps} (${s.weight})`;
+                                        } else if (s.reps) {
+                                            return s.reps;
+                                        } else {
+                                            return '';
+                                        }
+                                    }).filter(Boolean).join(', ');
+                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
                                 }
                             }).join('')}
                         </div>
@@ -627,6 +821,52 @@
             }
             
             container.appendChild(recentDiv);
+        }
+        
+        function exportData() {
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            const dataStr = JSON.stringify(history, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `workout-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            alert('Data exported successfully!');
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) {
+                        alert('Invalid data format');
+                        return;
+                    }
+                    
+                    // Merge with existing data
+                    const existing = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+                    const merged = [...existing, ...data];
+                    
+                    // Remove duplicates based on startTime
+                    const unique = merged.filter((workout, index, self) => 
+                        index === self.findIndex(w => w.startTime === workout.startTime)
+                    );
+                    
+                    localStorage.setItem('workoutHistory', JSON.stringify(unique));
+                    alert(`Imported ${data.length} workouts successfully!`);
+                    showHistory(); // Refresh the display
+                } catch (error) {
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset file input
         }
     </script>
 </body>
