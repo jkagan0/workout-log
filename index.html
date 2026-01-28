@@ -112,6 +112,14 @@
             display: none !important;
         }
         
+        #pastWorkoutModal {
+            display: flex;
+        }
+        
+        #pastWorkoutModal.hidden {
+            display: none !important;
+        }
+        
         .flex {
             display: flex;
         }
@@ -220,7 +228,7 @@
     </div>
     
     <!-- Past Workout Date Selector Modal -->
-    <div id="pastWorkoutModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div id="pastWorkoutModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
         <div style="background: white; padding: 2rem; border-radius: 0.5rem; max-width: 500px; width: 90%;">
             <h2 class="font-bold mb-4" style="font-size: 1.5rem;">Log Past Workout</h2>
             
@@ -383,10 +391,17 @@
         }
         
         function addCustomExercise() {
+            console.log('addCustomExercise called');
             const input = document.getElementById('customExercise');
-            if (input.value.trim()) {
+            console.log('Input element:', input);
+            console.log('Input value:', input ? input.value : 'input not found');
+            console.log('Current workout:', currentWorkout);
+            if (input && input.value.trim()) {
+                console.log('Adding exercise:', input.value.trim());
                 addExercise(input.value.trim());
                 input.value = '';
+            } else {
+                console.log('Input empty or not found');
             }
         }
         
@@ -408,6 +423,9 @@
         }
         
         function addExercise(name) {
+            console.log('addExercise called with name:', name);
+            console.log('currentWorkout:', currentWorkout);
+            console.log('currentWorkout.id:', currentWorkout ? currentWorkout.id : 'no workout');
             const exercise = {
                 id: Date.now(),
                 name: name,
@@ -415,7 +433,9 @@
                     ? [{ time: '', distance: '', speed: '', incline: '', notes: '' }]
                     : [{ reps: '', weight: '' }]
             };
+            console.log('Created exercise:', exercise);
             exercises.push(exercise);
+            console.log('exercises array now has', exercises.length, 'items');
             renderExercises();
         }
         
