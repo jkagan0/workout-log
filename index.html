@@ -293,6 +293,7 @@
             
             if (dateStr && timeStr) {
                 workoutStartTime = new Date(`${dateStr}T${timeStr}`);
+                updateWorkoutInfo(); // Update the display immediately
             }
         }
         
@@ -367,10 +368,22 @@
         }
         
         function updateWorkoutInfo() {
-            const duration = Math.floor((new Date() - workoutStartTime) / 60000);
-            document.getElementById('workoutInfo').textContent = 
-                `${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${duration} min`;
-            setTimeout(updateWorkoutInfo, 30000);
+            const now = new Date();
+            const workoutDate = new Date(workoutStartTime);
+            
+            // Check if workout is today
+            const isToday = workoutDate.toDateString() === now.toDateString();
+            
+            if (isToday) {
+                const duration = Math.floor((now - workoutStartTime) / 60000);
+                document.getElementById('workoutInfo').textContent = 
+                    `${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${duration} min`;
+                setTimeout(updateWorkoutInfo, 30000);
+            } else {
+                // For past workouts, just show the date and time
+                document.getElementById('workoutInfo').textContent = 
+                    `${workoutStartTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            }
         }
         
         function addCustomExercise() {
@@ -647,7 +660,20 @@
                     border-radius: 0.5rem;
                     padding: 0.5rem;
                     background: ${isToday ? '#eff6ff' : 'white'};
+                    cursor: ${workouts.length > 0 ? 'pointer' : 'default'};
+                    transition: all 0.2s;
                 `;
+                
+                // Add click handler if there are workouts on this day
+                if (workouts.length > 0) {
+                    dayCell.onclick = () => showWorkoutsForDate(dateStr);
+                    dayCell.onmouseover = () => {
+                        dayCell.style.background = '#f8fafc';
+                    };
+                    dayCell.onmouseout = () => {
+                        dayCell.style.background = isToday ? '#eff6ff' : 'white';
+                    };
+                }
                 
                 const dotsHTML = workouts.map(w => {
                     const type = WORKOUT_TYPES.find(t => t.id === w.type);
@@ -675,7 +701,18 @@
             }
         }
         
-        function showHistory() {
+        function showWorkoutsForDate(dateStr) {
+            // Scroll to recent workouts section
+            const recentSection = document.querySelector('#historyContent .exercise-box:last-child');
+            if (recentSection) {
+                recentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
+            // Filter and display only workouts from this date
+            showHistory(dateStr);
+        }
+        
+        function showHistory(filterDate = null) {
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('historyScreen').classList.remove('hidden');
             
@@ -708,17 +745,33 @@
             const recentDiv = document.createElement('div');
             recentDiv.className = 'exercise-box';
             
-            if (history.length === 0) {
-                recentDiv.innerHTML = '<h2 class="font-bold mb-4">Recent Workouts</h2><p class="text-gray" style="text-align: center; padding: 2rem;">No workouts yet. Start your first workout!</p>';
+            // Filter workouts by date if specified
+            let workoutsToShow = history;
+            let sectionTitle = 'Recent Workouts';
+            
+            if (filterDate) {
+                workoutsToShow = history.filter(w => new Date(w.startTime).toDateString() === filterDate);
+                const date = new Date(filterDate);
+                sectionTitle = `Workouts on ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+            }
+            
+            if (workoutsToShow.length === 0) {
+                recentDiv.innerHTML = `<h2 class="font-bold mb-4">${sectionTitle}</h2><p class="text-gray" style="text-align: center; padding: 2rem;">No workouts ${filterDate ? 'on this date' : 'yet. Start your first workout!'}${filterDate ? ` <button onclick="showHistory()" style="color: #3b82f6; text-decoration: underline; background: none; border: none; cursor: pointer;">Show all workouts</button>` : ''}</p>`;
             } else {
-                recentDiv.innerHTML = '<h2 class="font-bold mb-4">Recent Workouts</h2>';
+                recentDiv.innerHTML = `<h2 class="font-bold mb-4">${sectionTitle} ${filterDate ? `<button onclick="showHistory()" style="color: #3b82f6; font-size: 0.875rem; background: none; border: none; cursor: pointer; text-decoration: underline;">Show all</button>` : ''}</h2>`;
                 
-                [...history].reverse().slice(0, 10).forEach((workout, idx) => {
+                const displayWorkouts = filterDate ? workoutsToShow : [...workoutsToShow].reverse().slice(0, 10);
+                displayWorkouts.forEach((workout, idx) => {
                     const type = WORKOUT_TYPES.find(t => t.id === workout.type);
                     const start = new Date(workout.startTime);
                     const end = new Date(workout.endTime);
                     const duration = Math.floor((end - start) / 60000);
-                    const originalIndex = history.length - 1 - idx; // Get original index in non-reversed array
+                    
+                    // Find the original index in the full history array
+                    const originalIndex = history.findIndex(w => 
+                        w.startTime === workout.startTime && 
+                        w.type === workout.type
+                    );
                     
                     const workoutDiv = document.createElement('div');
                     workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative;';
