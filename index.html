@@ -112,13 +112,6 @@
             display: none !important;
         }
         
-        #pastWorkoutModal {
-            display: flex;
-        }
-        
-        #pastWorkoutModal.hidden {
-            display: none !important;
-        }
         
         .flex {
             display: flex;
@@ -192,7 +185,7 @@
                 <label class="text-sm font-bold">Add Custom Exercise</label>
                 <div class="flex gap-2" style="margin-top: 0.5rem;">
                     <input type="text" id="customExercise" placeholder="Enter exercise name..." onkeypress="if(event.key==='Enter') addCustomExercise()">
-                    <button class="btn btn-primary" onclick="alert('Button clicked!'); addCustomExercise(); return false;">Add</button>
+                    <button class="btn btn-primary" onclick="addCustomExercise()">Add</button>
                 </div>
             </div>
             <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
@@ -215,7 +208,6 @@
                 <div style="position: relative;">
                     <button class="btn btn-secondary" onclick="toggleOtherMenu()" id="otherMenuBtn">Other ▾</button>
                     <div id="otherMenu" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: white; border: 2px solid #cbd5e1; border-radius: 0.5rem; min-width: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;">
-                        <button onclick="showPastWorkoutSelector(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-bottom: 1px solid #e2e8f0;">+ Past Workout</button>
                         <button onclick="exportData(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-bottom: 1px solid #e2e8f0;">Export Data</button>
                         <button onclick="document.getElementById('importFile').click(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-radius: 0 0 0.5rem 0.5rem;">Import Data</button>
                     </div>
@@ -227,32 +219,6 @@
         <div id="historyContent"></div>
     </div>
     
-    <!-- Past Workout Date Selector Modal -->
-    <div id="pastWorkoutModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
-        <div style="background: white; padding: 2rem; border-radius: 0.5rem; max-width: 500px; width: 90%;">
-            <h2 class="font-bold mb-4" style="font-size: 1.5rem;">Log Past Workout</h2>
-            
-            <div class="mb-4">
-                <label class="text-sm font-bold mb-2" style="display: block;">Date</label>
-                <input type="date" id="pastWorkoutDate" style="width: 100%;">
-            </div>
-            
-            <div class="mb-4">
-                <label class="text-sm font-bold mb-2" style="display: block;">Time</label>
-                <input type="time" id="pastWorkoutTime" style="width: 100%;">
-            </div>
-            
-            <div class="mb-4">
-                <label class="text-sm font-bold mb-2" style="display: block;">Workout Type</label>
-                <div id="pastWorkoutTypes" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
-            </div>
-            
-            <div class="flex gap-2">
-                <button class="btn btn-secondary" style="flex: 1;" onclick="closePastWorkoutModal()">Cancel</button>
-                <button class="btn btn-primary" style="flex: 1;" onclick="startPastWorkout()">Continue</button>
-            </div>
-        </div>
-    </div>
 
     <script>
         const WORKOUT_TYPES = [
@@ -278,9 +244,6 @@
         let workoutStartTime = null;
         let viewingMonth = new Date().getMonth();
         let viewingYear = new Date().getFullYear();
-        let isPastWorkout = false;
-        let selectedPastDate = null;
-        let selectedPastType = null;
         
         // Initialize
         document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
@@ -307,8 +270,8 @@
             currentWorkout = type;
             exercises = [];
             
-            // Use selected past date or current time
-            workoutStartTime = isPastWorkout ? selectedPastDate : new Date();
+            // Use current time
+            workoutStartTime = new Date();
             
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('historyScreen').classList.add('hidden');
@@ -322,6 +285,13 @@
         
         function renderPreviousWorkouts() {
             const container = document.getElementById('previousWorkouts');
+            
+            // Safety check
+            if (!currentWorkout || !currentWorkout.id) {
+                container.innerHTML = '';
+                return;
+            }
+            
             const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
             
             // Filter workouts of the same type and get last 3
@@ -567,19 +537,10 @@
         }
         
         function finishWorkout() {
-            // Calculate end time based on whether this is a past workout
-            let endTime;
-            if (isPastWorkout) {
-                // For past workouts, add a default 45 minute duration
-                endTime = new Date(workoutStartTime.getTime() + 45 * 60000);
-            } else {
-                endTime = new Date();
-            }
-            
             const workout = {
                 type: currentWorkout.id,
                 startTime: workoutStartTime.toISOString(),
-                endTime: endTime.toISOString(),
+                endTime: new Date().toISOString(),
                 exercises: exercises
             };
             
@@ -594,11 +555,6 @@
                 alert('Could not save workout');
             }
             
-            // Reset past workout flags
-            isPastWorkout = false;
-            selectedPastDate = null;
-            selectedPastType = null;
-            
             showHome();
         }
         
@@ -608,9 +564,6 @@
             document.getElementById('homeScreen').classList.remove('hidden');
             currentWorkout = null;
             exercises = [];
-            isPastWorkout = false;
-            selectedPastDate = null;
-            selectedPastType = null;
             // Reset to current month when going home
             viewingMonth = new Date().getMonth();
             viewingYear = new Date().getFullYear();
@@ -630,69 +583,6 @@
             }
         });
         
-        function showPastWorkoutSelector() {
-            const modal = document.getElementById('pastWorkoutModal');
-            const now = new Date();
-            
-            // Set default date to today
-            document.getElementById('pastWorkoutDate').value = now.toISOString().split('T')[0];
-            document.getElementById('pastWorkoutTime').value = now.toTimeString().slice(0, 5);
-            
-            // Render workout type buttons
-            const typesContainer = document.getElementById('pastWorkoutTypes');
-            typesContainer.innerHTML = '';
-            
-            WORKOUT_TYPES.forEach(type => {
-                const button = document.createElement('button');
-                button.className = 'btn btn-secondary';
-                button.style.cssText = 'text-align: left; padding: 1rem;';
-                button.innerHTML = `
-                    <div class="flex gap-2" style="align-items: center;">
-                        <span class="color-dot" style="background: ${type.color};"></span>
-                        <span>${type.label}</span>
-                    </div>
-                `;
-                button.onclick = () => {
-                    selectedPastType = type;
-                    // Highlight selected
-                    typesContainer.querySelectorAll('button').forEach(b => b.style.border = '2px solid #cbd5e1');
-                    button.style.border = `2px solid ${type.color}`;
-                };
-                typesContainer.appendChild(button);
-            });
-            
-            modal.classList.remove('hidden');
-        }
-        
-        function closePastWorkoutModal() {
-            document.getElementById('pastWorkoutModal').classList.add('hidden');
-            selectedPastType = null;
-        }
-        
-        function startPastWorkout() {
-            if (!selectedPastType) {
-                alert('Please select a workout type');
-                return;
-            }
-            
-            const dateStr = document.getElementById('pastWorkoutDate').value;
-            const timeStr = document.getElementById('pastWorkoutTime').value;
-            
-            if (!dateStr || !timeStr) {
-                alert('Please select both date and time');
-                return;
-            }
-            
-            // Combine date and time
-            selectedPastDate = new Date(`${dateStr}T${timeStr}`);
-            isPastWorkout = true;
-            
-            closePastWorkoutModal();
-            
-            // Make sure to hide history screen before starting workout
-            document.getElementById('historyScreen').classList.add('hidden');
-            startWorkout(selectedPastType);
-        }
         
         function previousMonth() {
             viewingMonth--;
@@ -775,6 +665,19 @@
             }
         }
         
+        function deleteWorkout(index) {
+            if (confirm('Delete this workout? This cannot be undone.')) {
+                try {
+                    const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+                    history.splice(index, 1);
+                    localStorage.setItem('workoutHistory', JSON.stringify(history));
+                    showHistory(); // Refresh the display
+                } catch (e) {
+                    alert('Error deleting workout');
+                }
+            }
+        }
+        
         function showHistory() {
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('historyScreen').classList.remove('hidden');
@@ -813,16 +716,18 @@
             } else {
                 recentDiv.innerHTML = '<h2 class="font-bold mb-4">Recent Workouts</h2>';
                 
-                [...history].reverse().slice(0, 10).forEach(workout => {
+                [...history].reverse().slice(0, 10).forEach((workout, idx) => {
                     const type = WORKOUT_TYPES.find(t => t.id === workout.type);
                     const start = new Date(workout.startTime);
                     const end = new Date(workout.endTime);
                     const duration = Math.floor((end - start) / 60000);
+                    const originalIndex = history.length - 1 - idx; // Get original index in non-reversed array
                     
                     const workoutDiv = document.createElement('div');
-                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;';
+                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative;';
                     workoutDiv.innerHTML = `
-                        <div class="flex mb-2" style="justify-content: space-between;">
+                        <button onclick="deleteWorkout(${originalIndex})" style="position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.25rem; padding: 0.25rem 0.5rem; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
+                        <div class="flex mb-2" style="justify-content: space-between; padding-right: 2rem;">
                             <div class="flex gap-2" style="align-items: center;">
                                 <span class="color-dot" style="background: ${type.color};"></span>
                                 <div>
