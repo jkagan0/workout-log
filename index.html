@@ -1,26 +1,920 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Test</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Log</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=DM+Sans:wght@500;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: white;
+            color: #0f172a;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 56rem;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+        
+        .title-text {
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #f1f5f9;
+            border: 2px solid #cbd5e1;
+            color: #0f172a;
+        }
+        
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+        
+        .workout-card {
+            border: 2px solid #e2e8f0;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .workout-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .exercise-box {
+            border: 2px solid #e2e8f0;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.5rem;
+            background: white;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 0.25rem;
+            font-size: 1rem;
+        }
+        
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+        
+        .timer {
+            border: 4px solid #3b82f6;
+            width: 6rem;
+            height: 6rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        #pastWorkoutModal {
+            display: flex;
+        }
+        
+        #pastWorkoutModal.hidden {
+            display: none !important;
+        }
+        
+        .flex {
+            display: flex;
+        }
+        
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-8 { margin-bottom: 2rem; }
+        
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+        }
+        
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-gray { color: #64748b; }
+        .font-bold { font-weight: 700; }
+        
+        .color-dot {
+            width: 0.75rem;
+            height: 0.75rem;
+            border-radius: 50%;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
-    <h1>Button Test</h1>
-    <button onclick="alert('Button works!')">Click Me</button>
+    <!-- Home Screen -->
+    <div id="homeScreen" class="container">
+        <div class="mb-8">
+            <div class="flex" style="justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <h1 class="title-text" style="font-size: 3rem;">Workout Log</h1>
+                <button class="btn btn-primary" onclick="showHistory()">Activity</button>
+            </div>
+            <p class="text-sm text-gray" id="currentDate"></p>
+        </div>
+        
+        <div id="workoutTypes"></div>
+    </div>
     
-    <br><br>
+    <!-- Workout Screen -->
+    <div id="workoutScreen" class="container hidden">
+        <div class="mb-4 flex" style="justify-content: space-between; align-items: flex-start;">
+            <div>
+                <div class="flex gap-2 mb-2" style="align-items: center;">
+                    <span class="color-dot" id="workoutColorDot"></span>
+                    <h1 class="title-text" style="font-size: 2rem;" id="workoutTitle"></h1>
+                </div>
+                <p class="text-sm text-gray" id="workoutInfo"></p>
+            </div>
+            <div style="text-align: center;">
+                <div class="timer" id="timerDisplay" onclick="toggleTimer()" style="cursor: pointer;" title="Click to start/pause">1:30</div>
+                <div class="flex gap-2" style="margin-top: 0.5rem; justify-content: center;">
+                    <button class="btn btn-secondary" style="padding: 0.5rem;" onclick="resetTimer()">↻</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Previous Workouts History -->
+        <div id="previousWorkouts" class="mb-4"></div>
+        
+        <div id="exerciseList"></div>
+        
+        <div class="exercise-box mb-4">
+            <div class="mb-2">
+                <label class="text-sm font-bold">Add Custom Exercise</label>
+                <div class="flex gap-2" style="margin-top: 0.5rem;">
+                    <input type="text" id="customExercise" placeholder="Enter exercise name..." onkeypress="if(event.key==='Enter') addCustomExercise()">
+                    <button class="btn btn-primary" onclick="alert('Button clicked!'); addCustomExercise(); return false;">Add</button>
+                </div>
+            </div>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
+                <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;" onclick="toggleExerciseList()">Browse Exercises</button>
+                <div id="exerciseListContainer" class="hidden grid-2" style="max-height: 16rem; overflow-y: auto;"></div>
+            </div>
+        </div>
+        
+        <div class="flex gap-4">
+            <button class="btn btn-secondary" style="flex: 1;" onclick="cancelWorkout()">Cancel</button>
+            <button class="btn btn-primary" style="flex: 1;" onclick="finishWorkout()">Finish Workout</button>
+        </div>
+    </div>
     
-    <input type="text" id="testInput" placeholder="Type something">
-    <button onclick="testFunction()">Test Add</button>
+    <!-- History Screen -->
+    <div id="historyScreen" class="container hidden">
+        <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
+            <h1 class="title-text" style="font-size: 2rem;">Activity</h1>
+            <div class="flex gap-2">
+                <div style="position: relative;">
+                    <button class="btn btn-secondary" onclick="toggleOtherMenu()" id="otherMenuBtn">Other ▾</button>
+                    <div id="otherMenu" class="hidden" style="position: absolute; right: 0; top: 100%; margin-top: 0.5rem; background: white; border: 2px solid #cbd5e1; border-radius: 0.5rem; min-width: 200px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); z-index: 100;">
+                        <button onclick="showPastWorkoutSelector(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-bottom: 1px solid #e2e8f0;">+ Past Workout</button>
+                        <button onclick="exportData(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-bottom: 1px solid #e2e8f0;">Export Data</button>
+                        <button onclick="document.getElementById('importFile').click(); toggleOtherMenu();" style="width: 100%; text-align: left; padding: 0.75rem 1rem; border: none; background: white; cursor: pointer; border-radius: 0 0 0.5rem 0.5rem;">Import Data</button>
+                    </div>
+                </div>
+                <button class="btn btn-secondary" onclick="showHome()">Back</button>
+            </div>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+        <div id="historyContent"></div>
+    </div>
     
-    <div id="output"></div>
-    
+    <!-- Past Workout Date Selector Modal -->
+    <div id="pastWorkoutModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; z-index: 1000;">
+        <div style="background: white; padding: 2rem; border-radius: 0.5rem; max-width: 500px; width: 90%;">
+            <h2 class="font-bold mb-4" style="font-size: 1.5rem;">Log Past Workout</h2>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Date</label>
+                <input type="date" id="pastWorkoutDate" style="width: 100%;">
+            </div>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Time</label>
+                <input type="time" id="pastWorkoutTime" style="width: 100%;">
+            </div>
+            
+            <div class="mb-4">
+                <label class="text-sm font-bold mb-2" style="display: block;">Workout Type</label>
+                <div id="pastWorkoutTypes" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="closePastWorkoutModal()">Cancel</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="startPastWorkout()">Continue</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function testFunction() {
-            alert('Function called!');
-            const input = document.getElementById('testInput');
-            const output = document.getElementById('output');
-            output.innerHTML += '<p>' + input.value + '</p>';
-            input.value = '';
+        const WORKOUT_TYPES = [
+            { id: 'chestBack', label: 'Chest/Back', color: '#3b82f6' },
+            { id: 'legs', label: 'Legs', color: '#0ea5e9' },
+            { id: 'shouldersArmsA', label: 'Shoulders/Arms A', color: '#6366f1' },
+            { id: 'shouldersArmsB', label: 'Shoulders/Arms B', color: '#8b5cf6' },
+            { id: 'cardio', label: 'Cardio', color: '#06b6d4' }
+        ];
+        
+        const EXERCISES = {
+            chestBack: ['Bench Press', 'Incline Bench Press', 'Pull-ups', 'Barbell Rows', 'Lat Pulldown', 'Dumbbell Rows', 'Cable Flyes', 'Face Pulls'],
+            legs: ['Squats', 'Romanian Deadlifts', 'Leg Press', 'Lunges', 'Leg Curls', 'Leg Extensions', 'Calf Raises', 'Hip Thrusts'],
+            shouldersArmsA: ['Overhead Press', 'Lateral Raises', 'Front Raises', 'Bicep Curls', 'Hammer Curls', 'Shrugs', 'Arnold Press'],
+            shouldersArmsB: ['Dumbbell Press', 'Cable Lateral Raises', 'Face Pulls', 'Tricep Extensions', 'Skull Crushers', 'Tricep Dips', 'Close-Grip Bench'],
+            cardio: ['Treadmill Run', 'Cycling', 'Rowing Machine', 'Elliptical', 'Stair Climber', 'Jump Rope', 'Swimming', 'HIIT Intervals']
+        };
+        
+        let currentWorkout = null;
+        let exercises = [];
+        let timerSeconds = 90;
+        let timerInterval = null;
+        let workoutStartTime = null;
+        let viewingMonth = new Date().getMonth();
+        let viewingYear = new Date().getFullYear();
+        let isPastWorkout = false;
+        let selectedPastDate = null;
+        let selectedPastType = null;
+        
+        // Initialize
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+        
+        // Render workout types
+        const typesContainer = document.getElementById('workoutTypes');
+        WORKOUT_TYPES.forEach(type => {
+            const card = document.createElement('div');
+            card.className = 'workout-card';
+            card.innerHTML = `
+                <div class="flex" style="justify-content: space-between; align-items: center;">
+                    <div class="flex gap-4" style="align-items: center;">
+                        <span class="color-dot" style="background: ${type.color};"></span>
+                        <h2 style="font-size: 1.25rem; font-weight: 600;">${type.label}</h2>
+                    </div>
+                    <span style="font-size: 1.5rem; color: #94a3b8;">›</span>
+                </div>
+            `;
+            card.onclick = () => startWorkout(type);
+            typesContainer.appendChild(card);
+        });
+        
+        function startWorkout(type) {
+            currentWorkout = type;
+            exercises = [];
+            
+            // Use selected past date or current time
+            workoutStartTime = isPastWorkout ? selectedPastDate : new Date();
+            
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('historyScreen').classList.add('hidden');
+            document.getElementById('workoutScreen').classList.remove('hidden');
+            document.getElementById('workoutColorDot').style.background = type.color;
+            document.getElementById('workoutTitle').textContent = type.label;
+            updateWorkoutInfo();
+            renderPreviousWorkouts();
+            renderExercises();
+        }
+        
+        function renderPreviousWorkouts() {
+            const container = document.getElementById('previousWorkouts');
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            
+            // Filter workouts of the same type and get last 3
+            const sameTypeWorkouts = history
+                .filter(w => w.type === currentWorkout.id)
+                .reverse()
+                .slice(0, 3);
+            
+            if (sameTypeWorkouts.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = '<div class="exercise-box"><h3 class="font-bold mb-2">Previous Workouts</h3></div>';
+            const boxDiv = container.querySelector('.exercise-box');
+            
+            sameTypeWorkouts.forEach(workout => {
+                const start = new Date(workout.startTime);
+                const end = new Date(workout.endTime);
+                const duration = Math.floor((end - start) / 60000);
+                
+                const workoutDiv = document.createElement('div');
+                workoutDiv.style.cssText = 'border: 1px solid #e2e8f0; padding: 0.75rem; margin-top: 0.75rem; border-radius: 0.25rem; background: #f8fafc;';
+                workoutDiv.innerHTML = `
+                    <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
+                        <p class="text-sm font-bold">${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                        <p class="text-xs text-gray">${duration} min • ${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</p>
+                    </div>
+                    <div class="text-sm">
+                        ${workout.exercises.map(ex => {
+                            const isCardio = workout.type === 'cardio';
+                            if (isCardio) {
+                                const details = ex.sets.map(s => {
+                                    const parts = [];
+                                    if (s.time) parts.push(`${s.time} min`);
+                                    if (s.distance) parts.push(`${s.distance} mi`);
+                                    if (s.speed) parts.push(`${s.speed} mph`);
+                                    if (s.incline) parts.push(`${s.incline}% incline`);
+                                    return parts.join(', ');
+                                }).filter(Boolean).join(' | ');
+                                return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
+                            } else {
+                                // Format: reps (weight), reps (weight), etc.
+                                const setDetails = ex.sets.map(s => {
+                                    if (s.reps && s.weight) {
+                                        return `${s.reps} (${s.weight})`;
+                                    } else if (s.reps) {
+                                        return s.reps;
+                                    } else {
+                                        return '';
+                                    }
+                                }).filter(Boolean).join(', ');
+                                return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
+                            }
+                        }).join('')}
+                    </div>
+                `;
+                boxDiv.appendChild(workoutDiv);
+            });
+        }
+        
+        function updateWorkoutInfo() {
+            const duration = Math.floor((new Date() - workoutStartTime) / 60000);
+            document.getElementById('workoutInfo').textContent = 
+                `${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${duration} min`;
+            setTimeout(updateWorkoutInfo, 30000);
+        }
+        
+        function addCustomExercise() {
+            console.log('addCustomExercise called');
+            const input = document.getElementById('customExercise');
+            console.log('Input element:', input);
+            console.log('Input value:', input ? input.value : 'input not found');
+            console.log('Current workout:', currentWorkout);
+            if (input && input.value.trim()) {
+                console.log('Adding exercise:', input.value.trim());
+                addExercise(input.value.trim());
+                input.value = '';
+            } else {
+                console.log('Input empty or not found');
+            }
+        }
+        
+        function toggleExerciseList() {
+            const container = document.getElementById('exerciseListContainer');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                container.innerHTML = '';
+                EXERCISES[currentWorkout.id].forEach(ex => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn btn-secondary text-sm';
+                    btn.textContent = ex;
+                    btn.onclick = () => addExercise(ex);
+                    container.appendChild(btn);
+                });
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+        
+        function addExercise(name) {
+            console.log('addExercise called with name:', name);
+            console.log('currentWorkout:', currentWorkout);
+            
+            if (!currentWorkout) {
+                alert('Error: No workout selected. Please start a workout first.');
+                return;
+            }
+            
+            console.log('currentWorkout.id:', currentWorkout.id);
+            const exercise = {
+                id: Date.now(),
+                name: name,
+                sets: currentWorkout.id === 'cardio' 
+                    ? [{ time: '', distance: '', speed: '', incline: '', notes: '' }]
+                    : [{ reps: '', weight: '' }]
+            };
+            console.log('Created exercise:', exercise);
+            exercises.push(exercise);
+            console.log('exercises array now has', exercises.length, 'items');
+            renderExercises();
+        }
+        
+        function renderExercises() {
+            const container = document.getElementById('exerciseList');
+            container.innerHTML = '';
+            
+            exercises.forEach(ex => {
+                const div = document.createElement('div');
+                div.className = 'exercise-box';
+                
+                let setsHTML = '';
+                ex.sets.forEach((set, idx) => {
+                    if (currentWorkout.id === 'cardio') {
+                        setsHTML += `
+                            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem;">
+                                <div class="grid-2 mb-2">
+                                    <div>
+                                        <label class="text-xs text-gray">Time (min)</label>
+                                        <input type="number" value="${set.time}" onchange="updateSet(${ex.id}, ${idx}, 'time', this.value)">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray">Distance (mi)</label>
+                                        <input type="number" step="0.1" value="${set.distance}" onchange="updateSet(${ex.id}, ${idx}, 'distance', this.value)">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray">Speed (mph)</label>
+                                        <input type="number" step="0.1" value="${set.speed}" onchange="updateSet(${ex.id}, ${idx}, 'speed', this.value)">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs text-gray">Incline (%)</label>
+                                        <input type="number" step="0.1" value="${set.incline}" onchange="updateSet(${ex.id}, ${idx}, 'incline', this.value)">
+                                    </div>
+                                </div>
+                                <label class="text-xs text-gray">Notes</label>
+                                <textarea rows="2" onchange="updateSet(${ex.id}, ${idx}, 'notes', this.value)">${set.notes}</textarea>
+                            </div>
+                        `;
+                    } else {
+                        setsHTML += `
+                            <div class="flex gap-2 mb-2" style="align-items: center;">
+                                <span style="width: 2rem; font-weight: 600;">${idx + 1}</span>
+                                <input type="number" placeholder="Reps" value="${set.reps}" onchange="updateSet(${ex.id}, ${idx}, 'reps', this.value)" style="flex: 1;">
+                                <input type="number" placeholder="Weight" value="${set.weight}" onchange="updateSet(${ex.id}, ${idx}, 'weight', this.value)" style="flex: 1;">
+                            </div>
+                        `;
+                    }
+                });
+                
+                div.innerHTML = `
+                    <div class="flex mb-2" style="justify-content: space-between;">
+                        <h3 class="font-bold">${ex.name}</h3>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
+                    </div>
+                    ${setsHTML}
+                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
+                        + Add ${currentWorkout.id === 'cardio' ? 'Session' : 'Set'}
+                    </button>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function addSet(exerciseId) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise) {
+                const newSet = currentWorkout.id === 'cardio'
+                    ? { time: '', distance: '', speed: '', incline: '', notes: '' }
+                    : { reps: '', weight: '' };
+                exercise.sets.push(newSet);
+                renderExercises();
+            }
+        }
+        
+        function updateSet(exerciseId, setIndex, field, value) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise && exercise.sets[setIndex]) {
+                exercise.sets[setIndex][field] = value;
+            }
+        }
+        
+        function removeExercise(exerciseId) {
+            exercises = exercises.filter(ex => ex.id !== exerciseId);
+            renderExercises();
+        }
+        
+        function toggleTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            } else {
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                    }
+                }, 1000);
+            }
+        }
+        
+        function resetTimer() {
+            timerSeconds = 90;
+            updateTimerDisplay();
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+        
+        function updateTimerDisplay() {
+            const mins = Math.floor(timerSeconds / 60);
+            const secs = timerSeconds % 60;
+            document.getElementById('timerDisplay').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function cancelWorkout() {
+            if (confirm('Cancel workout? All progress will be lost.')) {
+                showHome();
+            }
+        }
+        
+        function finishWorkout() {
+            // Calculate end time based on whether this is a past workout
+            let endTime;
+            if (isPastWorkout) {
+                // For past workouts, add a default 45 minute duration
+                endTime = new Date(workoutStartTime.getTime() + 45 * 60000);
+            } else {
+                endTime = new Date();
+            }
+            
+            const workout = {
+                type: currentWorkout.id,
+                startTime: workoutStartTime.toISOString(),
+                endTime: endTime.toISOString(),
+                exercises: exercises
+            };
+            
+            try {
+                const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+                history.push(workout);
+                // Sort by date
+                history.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+                localStorage.setItem('workoutHistory', JSON.stringify(history));
+                alert('Workout saved!');
+            } catch (e) {
+                alert('Could not save workout');
+            }
+            
+            // Reset past workout flags
+            isPastWorkout = false;
+            selectedPastDate = null;
+            selectedPastType = null;
+            
+            showHome();
+        }
+        
+        function showHome() {
+            document.getElementById('workoutScreen').classList.add('hidden');
+            document.getElementById('historyScreen').classList.add('hidden');
+            document.getElementById('homeScreen').classList.remove('hidden');
+            currentWorkout = null;
+            exercises = [];
+            isPastWorkout = false;
+            selectedPastDate = null;
+            selectedPastType = null;
+            // Reset to current month when going home
+            viewingMonth = new Date().getMonth();
+            viewingYear = new Date().getFullYear();
+        }
+        
+        function toggleOtherMenu() {
+            const menu = document.getElementById('otherMenu');
+            menu.classList.toggle('hidden');
+        }
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const menu = document.getElementById('otherMenu');
+            const btn = document.getElementById('otherMenuBtn');
+            if (menu && btn && !menu.contains(event.target) && !btn.contains(event.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+        
+        function showPastWorkoutSelector() {
+            const modal = document.getElementById('pastWorkoutModal');
+            const now = new Date();
+            
+            // Set default date to today
+            document.getElementById('pastWorkoutDate').value = now.toISOString().split('T')[0];
+            document.getElementById('pastWorkoutTime').value = now.toTimeString().slice(0, 5);
+            
+            // Render workout type buttons
+            const typesContainer = document.getElementById('pastWorkoutTypes');
+            typesContainer.innerHTML = '';
+            
+            WORKOUT_TYPES.forEach(type => {
+                const button = document.createElement('button');
+                button.className = 'btn btn-secondary';
+                button.style.cssText = 'text-align: left; padding: 1rem;';
+                button.innerHTML = `
+                    <div class="flex gap-2" style="align-items: center;">
+                        <span class="color-dot" style="background: ${type.color};"></span>
+                        <span>${type.label}</span>
+                    </div>
+                `;
+                button.onclick = () => {
+                    selectedPastType = type;
+                    // Highlight selected
+                    typesContainer.querySelectorAll('button').forEach(b => b.style.border = '2px solid #cbd5e1');
+                    button.style.border = `2px solid ${type.color}`;
+                };
+                typesContainer.appendChild(button);
+            });
+            
+            modal.classList.remove('hidden');
+        }
+        
+        function closePastWorkoutModal() {
+            document.getElementById('pastWorkoutModal').classList.add('hidden');
+            selectedPastType = null;
+        }
+        
+        function startPastWorkout() {
+            if (!selectedPastType) {
+                alert('Please select a workout type');
+                return;
+            }
+            
+            const dateStr = document.getElementById('pastWorkoutDate').value;
+            const timeStr = document.getElementById('pastWorkoutTime').value;
+            
+            if (!dateStr || !timeStr) {
+                alert('Please select both date and time');
+                return;
+            }
+            
+            // Combine date and time
+            selectedPastDate = new Date(`${dateStr}T${timeStr}`);
+            isPastWorkout = true;
+            
+            closePastWorkoutModal();
+            
+            // Make sure to hide history screen before starting workout
+            document.getElementById('historyScreen').classList.add('hidden');
+            startWorkout(selectedPastType);
+        }
+        
+        function previousMonth() {
+            viewingMonth--;
+            if (viewingMonth < 0) {
+                viewingMonth = 11;
+                viewingYear--;
+            }
+            renderCalendar();
+        }
+        
+        function nextMonth() {
+            viewingMonth++;
+            if (viewingMonth > 11) {
+                viewingMonth = 0;
+                viewingYear++;
+            }
+            renderCalendar();
+        }
+        
+        function renderCalendar() {
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            
+            const currentMonth = viewingMonth;
+            const currentYear = viewingYear;
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            const today = new Date();
+            
+            // Group workouts by date
+            const workoutsByDate = {};
+            history.forEach(workout => {
+                const date = new Date(workout.startTime).toDateString();
+                if (!workoutsByDate[date]) {
+                    workoutsByDate[date] = [];
+                }
+                workoutsByDate[date].push(workout);
+            });
+            
+            // Update month/year display
+            document.getElementById('monthYear').textContent = new Date(currentYear, currentMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            // Add empty cells
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.style.aspectRatio = '1';
+                calendarGrid.appendChild(emptyCell);
+            }
+            
+            // Add day cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const dateStr = date.toDateString();
+                const workouts = workoutsByDate[dateStr] || [];
+                const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+                
+                const dayCell = document.createElement('div');
+                dayCell.style.cssText = `
+                    aspect-ratio: 1;
+                    border: 2px solid ${isToday ? '#3b82f6' : '#e2e8f0'};
+                    border-radius: 0.5rem;
+                    padding: 0.5rem;
+                    background: ${isToday ? '#eff6ff' : 'white'};
+                `;
+                
+                const dotsHTML = workouts.map(w => {
+                    const type = WORKOUT_TYPES.find(t => t.id === w.type);
+                    return `<span class="color-dot" style="background: ${type.color}; width: 0.5rem; height: 0.5rem; margin: 0.125rem;"></span>`;
+                }).join('');
+                
+                dayCell.innerHTML = `
+                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem;">${day}</div>
+                    <div style="display: flex; flex-wrap: wrap;">${dotsHTML}</div>
+                `;
+                calendarGrid.appendChild(dayCell);
+            }
+        }
+        
+        function showHistory() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('historyScreen').classList.remove('hidden');
+            
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            const container = document.getElementById('historyContent');
+            container.innerHTML = '';
+            
+            // Create calendar with navigation
+            const calendarDiv = document.createElement('div');
+            calendarDiv.className = 'exercise-box mb-4';
+            calendarDiv.innerHTML = `
+                <div class="flex mb-4" style="justify-content: space-between; align-items: center;">
+                    <button class="btn btn-secondary" onclick="previousMonth()" style="padding: 0.5rem 1rem; font-size: 1.25rem;">←</button>
+                    <h2 class="font-bold" id="monthYear"></h2>
+                    <button class="btn btn-secondary" onclick="nextMonth()" style="padding: 0.5rem 1rem; font-size: 1.25rem;">→</button>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
+                    ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => 
+                        `<div style="text-align: center; font-size: 0.75rem; font-weight: 600; color: #64748b; padding: 0.5rem;">${day}</div>`
+                    ).join('')}
+                </div>
+                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem;"></div>
+            `;
+            container.appendChild(calendarDiv);
+            
+            // Render initial calendar
+            renderCalendar();
+            
+            // Recent workouts section
+            const recentDiv = document.createElement('div');
+            recentDiv.className = 'exercise-box';
+            
+            if (history.length === 0) {
+                recentDiv.innerHTML = '<h2 class="font-bold mb-4">Recent Workouts</h2><p class="text-gray" style="text-align: center; padding: 2rem;">No workouts yet. Start your first workout!</p>';
+            } else {
+                recentDiv.innerHTML = '<h2 class="font-bold mb-4">Recent Workouts</h2>';
+                
+                [...history].reverse().slice(0, 10).forEach(workout => {
+                    const type = WORKOUT_TYPES.find(t => t.id === workout.type);
+                    const start = new Date(workout.startTime);
+                    const end = new Date(workout.endTime);
+                    const duration = Math.floor((end - start) / 60000);
+                    
+                    const workoutDiv = document.createElement('div');
+                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem;';
+                    workoutDiv.innerHTML = `
+                        <div class="flex mb-2" style="justify-content: space-between;">
+                            <div class="flex gap-2" style="align-items: center;">
+                                <span class="color-dot" style="background: ${type.color};"></span>
+                                <div>
+                                    <h3 class="font-bold">${type.label}</h3>
+                                    <p class="text-sm text-gray">${start.toLocaleDateString()} at ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray" style="text-align: right;">
+                                <div>${duration} min</div>
+                                <div>${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</div>
+                            </div>
+                        </div>
+                        <div class="text-sm">
+                            ${workout.exercises.map(ex => {
+                                const isCardio = workout.type === 'cardio';
+                                if (isCardio) {
+                                    const details = ex.sets.map(s => {
+                                        const parts = [];
+                                        if (s.time) parts.push(`${s.time} min`);
+                                        if (s.distance) parts.push(`${s.distance} mi`);
+                                        if (s.speed) parts.push(`${s.speed} mph`);
+                                        if (s.incline) parts.push(`${s.incline}% incline`);
+                                        return parts.join(', ');
+                                    }).filter(Boolean).join(' | ');
+                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
+                                } else {
+                                    // Format: reps (weight), reps (weight), etc.
+                                    const setDetails = ex.sets.map(s => {
+                                        if (s.reps && s.weight) {
+                                            return `${s.reps} (${s.weight})`;
+                                        } else if (s.reps) {
+                                            return s.reps;
+                                        } else {
+                                            return '';
+                                        }
+                                    }).filter(Boolean).join(', ');
+                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
+                                }
+                            }).join('')}
+                        </div>
+                    `;
+                    recentDiv.appendChild(workoutDiv);
+                });
+            }
+            
+            container.appendChild(recentDiv);
+        }
+        
+        function exportData() {
+            const history = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+            const dataStr = JSON.stringify(history, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `workout-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            alert('Data exported successfully!');
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (!Array.isArray(data)) {
+                        alert('Invalid data format');
+                        return;
+                    }
+                    
+                    // Merge with existing data
+                    const existing = JSON.parse(localStorage.getItem('workoutHistory') || '[]');
+                    const merged = [...existing, ...data];
+                    
+                    // Remove duplicates based on startTime
+                    const unique = merged.filter((workout, index, self) => 
+                        index === self.findIndex(w => w.startTime === workout.startTime)
+                    );
+                    
+                    localStorage.setItem('workoutHistory', JSON.stringify(unique));
+                    alert(`Imported ${data.length} workouts successfully!`);
+                    showHistory(); // Refresh the display
+                } catch (error) {
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // Reset file input
         }
     </script>
 </body>
