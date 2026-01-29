@@ -165,7 +165,10 @@
                     <span class="color-dot" id="workoutColorDot"></span>
                     <h1 class="title-text" style="font-size: 2rem;" id="workoutTitle"></h1>
                 </div>
-                <p class="text-sm text-gray" id="workoutInfo"></p>
+                <div class="flex gap-2" style="align-items: center; margin-top: 0.5rem;">
+                    <input type="date" id="workoutDate" onchange="updateWorkoutDateTime()" style="padding: 0.25rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.25rem; font-size: 0.875rem;">
+                    <input type="time" id="workoutTime" onchange="updateWorkoutDateTime()" style="padding: 0.25rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 0.25rem; font-size: 0.875rem;">
+                </div>
             </div>
             <div style="text-align: center;">
                 <div class="timer" id="timerDisplay" onclick="toggleTimer()" style="cursor: pointer;" title="Click to start/pause">1:30</div>
@@ -187,10 +190,6 @@
                     <input type="text" id="customExercise" placeholder="Enter exercise name..." onkeypress="if(event.key==='Enter') addCustomExercise()">
                     <button class="btn btn-primary" onclick="addCustomExercise()">Add</button>
                 </div>
-            </div>
-            <div style="border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem;">
-                <button class="btn btn-primary" style="width: 100%; margin-bottom: 0.5rem;" onclick="toggleExerciseList()">Browse Exercises</button>
-                <div id="exerciseListContainer" class="hidden grid-2" style="max-height: 16rem; overflow-y: auto;"></div>
             </div>
         </div>
         
@@ -273,6 +272,11 @@
             // Use current time
             workoutStartTime = new Date();
             
+            // Set date/time inputs to current time
+            const now = new Date();
+            document.getElementById('workoutDate').value = now.toISOString().split('T')[0];
+            document.getElementById('workoutTime').value = now.toTimeString().slice(0, 5);
+            
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('historyScreen').classList.add('hidden');
             document.getElementById('workoutScreen').classList.remove('hidden');
@@ -281,6 +285,15 @@
             updateWorkoutInfo();
             renderPreviousWorkouts();
             renderExercises();
+        }
+        
+        function updateWorkoutDateTime() {
+            const dateStr = document.getElementById('workoutDate').value;
+            const timeStr = document.getElementById('workoutTime').value;
+            
+            if (dateStr && timeStr) {
+                workoutStartTime = new Date(`${dateStr}T${timeStr}`);
+            }
         }
         
         function renderPreviousWorkouts() {
@@ -375,22 +388,6 @@
             }
         }
         
-        function toggleExerciseList() {
-            const container = document.getElementById('exerciseListContainer');
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-                container.innerHTML = '';
-                EXERCISES[currentWorkout.id].forEach(ex => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn btn-secondary text-sm';
-                    btn.textContent = ex;
-                    btn.onclick = () => addExercise(ex);
-                    container.appendChild(btn);
-                });
-            } else {
-                container.classList.add('hidden');
-            }
-        }
         
         function addExercise(name) {
             console.log('addExercise called with name:', name);
