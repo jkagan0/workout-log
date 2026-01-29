@@ -240,6 +240,7 @@
         let exercises = [];
         let timerSeconds = 90;
         let timerInterval = null;
+        let workoutInfoTimeout = null;
         let workoutStartTime = null;
         let viewingMonth = new Date().getMonth();
         let viewingYear = new Date().getFullYear();
@@ -368,17 +369,24 @@
         }
         
         function updateWorkoutInfo() {
+            // Clear any existing timeout
+            if (workoutInfoTimeout) {
+                clearTimeout(workoutInfoTimeout);
+                workoutInfoTimeout = null;
+            }
+            
             const now = new Date();
-            const workoutDate = new Date(workoutStartTime);
+            const timeDiff = now - workoutStartTime;
+            const hoursDiff = timeDiff / (1000 * 60 * 60);
             
-            // Check if workout is today
-            const isToday = workoutDate.toDateString() === now.toDateString();
+            // Only show live counter if workout started within last 6 hours (i.e., it's from today)
+            const isRecent = hoursDiff >= 0 && hoursDiff < 6;
             
-            if (isToday) {
-                const duration = Math.floor((now - workoutStartTime) / 60000);
+            if (isRecent) {
+                const duration = Math.floor(timeDiff / 60000);
                 document.getElementById('workoutInfo').textContent = 
                     `${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${duration} min`;
-                setTimeout(updateWorkoutInfo, 30000);
+                workoutInfoTimeout = setTimeout(updateWorkoutInfo, 30000);
             } else {
                 // For past workouts, just show the date and time
                 document.getElementById('workoutInfo').textContent = 
@@ -547,10 +555,24 @@
         }
         
         function finishWorkout() {
+            // Calculate appropriate end time
+            const now = new Date();
+            const timeSinceStart = now - workoutStartTime;
+            const hoursSinceStart = timeSinceStart / (1000 * 60 * 60);
+            
+            let endTime;
+            if (hoursSinceStart >= 0 && hoursSinceStart < 6) {
+                // Recent workout - use current time
+                endTime = now;
+            } else {
+                // Past workout - add 45 minutes to start time as default duration
+                endTime = new Date(workoutStartTime.getTime() + 45 * 60000);
+            }
+            
             const workout = {
                 type: currentWorkout.id,
                 startTime: workoutStartTime.toISOString(),
-                endTime: new Date().toISOString(),
+                endTime: endTime.toISOString(),
                 exercises: exercises
             };
             
