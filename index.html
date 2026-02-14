@@ -647,6 +647,31 @@
         
         // Start Workout
         function startWorkout(category) {
+            // Check for existing draft
+            const draft = loadDraft();
+            
+            if (draft && draft.categoryId === category.id) {
+                if (confirm('Resume your draft workout?')) {
+                    currentWorkout = category;
+                    exercises = draft.exercises;
+                    workoutStartTime = new Date(draft.startTime);
+                    
+                    document.getElementById('workoutDate').value = draft.date;
+                    document.getElementById('workoutTime').value = draft.time;
+                    document.getElementById('workoutNotes').value = draft.notes || '';
+                    
+                    document.getElementById('workoutColorDot').style.background = category.color;
+                    document.getElementById('workoutTitle').textContent = category.name;
+                    
+                    updateWorkoutInfo();
+                    renderPreviousWorkouts();
+                    renderExercises();
+                    showWorkoutScreen();
+                    return;
+                }
+            }
+            
+            // Start fresh workout
             currentWorkout = category;
             exercises = [];
             workoutStartTime = new Date();
@@ -663,6 +688,9 @@
             renderPreviousWorkouts();
             renderExercises();
             showWorkoutScreen();
+            
+            // Save initial draft
+            saveDraft();
         }
         
         function updateWorkoutDateTime() {
@@ -786,6 +814,7 @@
             };
             exercises.push(exercise);
             renderExercises();
+            saveDraft(); // Auto-save
         }
         
         function renderExercises() {
@@ -850,6 +879,7 @@
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (exercise && exercise.sets[setIndex]) {
                 exercise.sets[setIndex][field] = value;
+                saveDraft(); // Auto-save
             }
         };
         
@@ -861,12 +891,14 @@
                     : { reps: '', weight: '' };
                 exercise.sets.push(newSet);
                 renderExercises();
+                saveDraft(); // Auto-save
             }
         };
         
         window.removeExercise = function(exerciseId) {
             exercises = exercises.filter(ex => ex.id !== exerciseId);
             renderExercises();
+            saveDraft(); // Auto-save
         };
         
         // Timer
@@ -905,6 +937,7 @@
         // Finish/Cancel Workout
         function cancelWorkout() {
             if (confirm('Cancel workout? All progress will be lost.')) {
+                clearDraft();
                 showHome();
             }
         }
@@ -980,6 +1013,7 @@
                 }
             }
             
+            clearDraft(); // Clear draft after successful save
             alert('Workout saved!');
             showHome();
         }
@@ -1365,6 +1399,40 @@
                 }
             };
             reader.readAsText(file);
+        }
+        
+        // Draft Management Functions
+        function saveDraft() {
+            if (!currentWorkout) return;
+            
+            const draft = {
+                categoryId: currentWorkout.id,
+                categoryName: currentWorkout.name,
+                categoryColor: currentWorkout.color,
+                exercises: exercises,
+                startTime: workoutStartTime.toISOString(),
+                date: document.getElementById('workoutDate').value,
+                time: document.getElementById('workoutTime').value,
+                notes: document.getElementById('workoutNotes').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('workoutDraft', JSON.stringify(draft));
+        }
+        
+        function loadDraft() {
+            const draftStr = localStorage.getItem('workoutDraft');
+            if (!draftStr) return null;
+            
+            try {
+                return JSON.parse(draftStr);
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        function clearDraft() {
+            localStorage.removeItem('workoutDraft');
         }
         
         // Start app
