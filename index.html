@@ -356,16 +356,23 @@
         
         // Initialize
         async function init() {
+            console.log('Init starting...');
+            
             if (typeof window.supabase === 'undefined') {
+                console.error('Supabase not loaded');
                 alert('Failed to load. Please refresh.');
                 return;
             }
+            
+            console.log('Supabase loaded');
             
             const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
             supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             
+            console.log('Setting up event listeners...');
             setupEventListeners();
+            console.log('Event listeners set up');
             
             const { data: { session } } = await supabase.auth.getSession();
             
@@ -379,6 +386,17 @@
         }
         
         function setupEventListeners() {
+            const loginBtn = document.getElementById('loginBtn');
+            const signupBtn = document.getElementById('signupBtn');
+            
+            console.log('loginBtn:', loginBtn);
+            console.log('signupBtn:', signupBtn);
+            
+            if (!loginBtn || !signupBtn) {
+                console.error('Auth buttons not found!');
+                return;
+            }
+            
             document.getElementById('loginBtn').addEventListener('click', handleLogin);
             document.getElementById('signupBtn').addEventListener('click', handleSignup);
             document.getElementById('logoutBtn').addEventListener('click', handleLogout);
@@ -396,6 +414,8 @@
             document.getElementById('workoutDate').addEventListener('change', updateWorkoutDateTime);
             document.getElementById('workoutTime').addEventListener('change', updateWorkoutDateTime);
             document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
+            
+            console.log('All event listeners attached');
         }
         
         async function loadUserData() {
@@ -481,9 +501,12 @@
         }
         
         async function handleSignup() {
+            console.log('handleSignup called');
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            
+            console.log('Email:', email, 'Password length:', password.length);
             
             if (!email || !password) {
                 showAuthError('Please enter email and password');
@@ -500,7 +523,11 @@
                 return;
             }
             
+            console.log('Calling supabase.auth.signUp...');
+            
             const { error } = await supabase.auth.signUp({ email, password });
+            
+            console.log('Signup result:', error);
             
             if (error) {
                 showAuthError(error.message);
