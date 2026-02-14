@@ -303,24 +303,15 @@
         <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
             <h1 class="title-text" style="font-size: 2rem;">Workout</h1>
             <div class="flex gap-2">
-                <button class="btn btn-secondary" id="feedBtn" style="padding: 0.5rem 0.75rem;">👥</button>
                 <button class="btn btn-secondary" id="settingsBtn" style="padding: 0.5rem 0.75rem;">⚙️</button>
                 <button class="btn btn-secondary" id="historyBtn">Activity</button>
             </div>
         </div>
         
-        <h2 class="font-bold mb-2" style="font-size: 1.25rem;">Start Workout</h2>
+        <h2 class="title-text mb-2" style="font-size: 1.25rem;">Start Workout</h2>
         <div id="workoutCategories"></div>
     </div>
     
-    <!-- Feed Screen -->
-    <div id="feedScreen" class="container hidden">
-        <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
-            <h1 class="title-text" style="font-size: 2rem;">Activity Feed</h1>
-            <button class="btn btn-secondary" id="backFromFeedBtn">Back</button>
-        </div>
-        <div id="feedContent"></div>
-    </div>
     
     <!-- Workout Screen -->
     <div id="workoutScreen" class="container hidden">
@@ -511,8 +502,6 @@
             
             // App listeners
             addListener('historyBtn', 'click', showHistory);
-            addListener('feedBtn', 'click', showFeed);
-            addListener('backFromFeedBtn', 'click', showHome);
             addListener('settingsBtn', 'click', showSettings);
             addListener('backFromHistoryBtn', 'click', showHome);
             addListener('backFromSettingsBtn', 'click', showHome);
@@ -718,7 +707,6 @@
             document.getElementById('homeScreen').classList.add('hidden');
             document.getElementById('workoutScreen').classList.add('hidden');
             document.getElementById('historyScreen').classList.add('hidden');
-            document.getElementById('feedScreen').classList.add('hidden');
             document.getElementById('settingsScreen').classList.add('hidden');
         }
         
@@ -1259,22 +1247,31 @@
                 const dayCell = document.createElement('div');
                 dayCell.style.cssText = `
                     aspect-ratio: 1;
-                    border: 2px solid ${isToday ? '#3b82f6' : '#e2e8f0'};
+                    border: 1px solid ${isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)'};
                     border-radius: 0.5rem;
                     padding: 0.5rem;
-                    background: ${isToday ? '#eff6ff' : 'white'};
+                    background: ${isToday ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)'};
+                    backdrop-filter: blur(10px);
                     cursor: ${dayWorkouts.length > 0 ? 'pointer' : 'default'};
                     overflow: hidden;
                     display: flex;
                     flex-direction: column;
                     min-height: 0;
                     max-height: 100%;
+                    color: #e0e0e0;
+                    transition: all 0.3s;
                 `;
                 
                 if (dayWorkouts.length > 0) {
-                    dayCell.onclick = () => showHistory(dateStr);
-                    dayCell.onmouseover = () => dayCell.style.background = '#f8fafc';
-                    dayCell.onmouseout = () => dayCell.style.background = isToday ? '#eff6ff' : 'white';
+                    dayCell.onclick = () => showHistory(dateStr, true);
+                    dayCell.onmouseover = () => {
+                        dayCell.style.background = 'rgba(0, 245, 255, 0.15)';
+                        dayCell.style.borderColor = 'rgba(0, 245, 255, 0.5)';
+                    };
+                    dayCell.onmouseout = () => {
+                        dayCell.style.background = isToday ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)';
+                        dayCell.style.borderColor = isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)';
+                    };
                 }
                 
                 const dotsHTML = dayWorkouts.slice(0, 3).map(w => {
@@ -1539,334 +1536,7 @@
             localStorage.removeItem('workoutDraft');
         }
         
-        // Social Feed Functions
-        async function showFeed() {
-            hideAllScreens();
-            document.getElementById('feedScreen').classList.remove('hidden');
-            await renderFeed();
-        }
         
-        async function renderFeed() {
-            const container = document.getElementById('feedContent');
-            container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-            
-            // Get all public workouts from all users (last 20)
-            const { data: workouts, error } = await supabaseClient
-                .from('workouts')
-                .select(`
-                    *,
-                    exercises (
-                        *,
-                        sets (*)
-                    )
-                `)
-                .order('start_time', { ascending: false })
-                .limit(20);
-            
-            if (error || !workouts || workouts.length === 0) {
-                container.innerHTML = '<div class="exercise-box"><p class="text-gray text-center" style="padding: 2rem;">No activity yet. Be the first to log a workout!</p></div>';
-                return;
-            }
-            
-            // Load all reactions and comments for these workouts
-            const workoutIds = workouts.map(w => w.id);
-            
-            const { data: reactions } = await supabaseClient
-                .from('reactions')
-                .select('*')
-                .in('workout_id', workoutIds);
-            
-            const { data: comments } = await supabaseClient
-                .from('comments')
-                .select('*')
-                .in('workout_id', workoutIds)
-                .order('created_at', { ascending: true });
-            
-            // Group reactions by workout and emoji
-            const reactionsByWorkout = {};
-            if (reactions) {
-                reactions.forEach(r => {
-                    if (!reactionsByWorkout[r.workout_id]) reactionsByWorkout[r.workout_id] = {};
-                    if (!reactionsByWorkout[r.workout_id][r.emoji]) reactionsByWorkout[r.workout_id][r.emoji] = [];
-                    reactionsByWorkout[r.workout_id][r.emoji].push(r);
-                });
-            }
-            
-            // Group comments by workout
-            const commentsByWorkout = {};
-            if (comments) {
-                comments.forEach(c => {
-                    if (!commentsByWorkout[c.workout_id]) commentsByWorkout[c.workout_id] = [];
-                    commentsByWorkout[c.workout_id].push(c);
-                });
-            }
-            
-            container.innerHTML = '';
-            
-            for (const workout of workouts) {
-                const cat = workoutCategories.find(c => c.name === workout.type);
-                const start = new Date(workout.start_time);
-                const end = new Date(workout.end_time);
-                const duration = Math.floor((end - start) / 60000);
-                const totalSets = workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0);
-                
-                const userEmail = workout.user_id === currentUser.id ? 'You' : `User ${workout.user_id.slice(0, 8)}`;
-                
-                // Get reaction counts
-                const workoutReactions = reactionsByWorkout[workout.id] || {};
-                const muscleCount = (workoutReactions['💪'] || []).length;
-                const fireCount = (workoutReactions['🔥'] || []).length;
-                const clapCount = (workoutReactions['👏'] || []).length;
-                
-                // Check if current user already reacted
-                const userReactedMuscle = workoutReactions['💪']?.some(r => r.user_id === currentUser.id);
-                const userReactedFire = workoutReactions['🔥']?.some(r => r.user_id === currentUser.id);
-                const userReactedClap = workoutReactions['👏']?.some(r => r.user_id === currentUser.id);
-                
-                const workoutComments = commentsByWorkout[workout.id] || [];
-                
-                const feedItem = document.createElement('div');
-                feedItem.className = 'exercise-box mb-4';
-                feedItem.innerHTML = `
-                    <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
-                        <div class="flex gap-2" style="align-items: center;">
-                            <span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'};"></span>
-                            <div>
-                                <p class="font-bold">${userEmail}</p>
-                                <p class="text-sm text-gray">${start.toLocaleDateString()} at ${start.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <p class="text-sm mb-2"><strong>${workout.type}</strong> • ${duration} min • ${totalSets} sets</p>
-                    ${workout.notes ? `<p class="text-sm text-gray mb-2" style="font-style: italic;">"${workout.notes}"</p>` : ''}
-                    
-                    <!-- Existing reactions display -->
-                    <div id="reactions-display-${workout.id}" class="flex gap-1" style="flex-wrap: wrap; margin-top: 0.5rem;">
-                    </div>
-                    
-                    <!-- Add reaction/comment buttons -->
-                    <div class="flex gap-2" style="border-top: 1px solid #e2e8f0; padding-top: 0.5rem; margin-top: 0.5rem;">
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="toggleEmojiInput('${workout.id}')">+ React</button>
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="toggleComments('${workout.id}')">💬 Comment (${workoutComments.length})</button>
-                    </div>
-                    
-                    <!-- Emoji input (hidden by default) -->
-                    <div id="emoji-input-${workout.id}" class="hidden" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.5rem;">
-                        <div class="flex gap-2">
-                            <input type="text" id="emoji-field-${workout.id}" placeholder="Type or paste an emoji..." style="flex: 1; font-size: 1.5rem; text-align: center;" maxlength="2">
-                            <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="addEmojiReaction('${workout.id}')">Add</button>
-                        </div>
-                        <p class="text-xs text-gray mt-2">Tip: On mobile, use your emoji keyboard. On desktop, Windows: Win + . or Mac: Cmd + Ctrl + Space</p>
-                    </div>
-                    
-                    <div id="comments-${workout.id}" class="hidden" style="margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
-                        <div id="comment-list-${workout.id}" style="margin-bottom: 1rem;"></div>
-                        <div class="flex gap-2">
-                            <input type="text" id="comment-input-${workout.id}" placeholder="Add a comment..." style="flex: 1;">
-                            <button class="btn btn-primary" onclick="addComment('${workout.id}')">Post</button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(feedItem);
-                
-                // Render existing reactions
-                renderReactions(workout.id, workoutReactions);
-                
-                // Render existing comments
-                renderComments(workout.id, workoutComments);
-            }
-        }
-        
-        function renderReactions(workoutId, reactions) {
-            const container = document.getElementById(`reactions-display-${workoutId}`);
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            // Group by emoji
-            const emojiCounts = {};
-            Object.keys(reactions).forEach(emoji => {
-                emojiCounts[emoji] = reactions[emoji].length;
-            });
-            
-            // Display each emoji with count
-            Object.entries(emojiCounts).forEach(([emoji, count]) => {
-                const userReacted = reactions[emoji]?.some(r => r.user_id === currentUser.id);
-                const btn = document.createElement('button');
-                btn.className = 'btn btn-secondary';
-                btn.style.cssText = `padding: 0.25rem 0.5rem; font-size: 0.875rem; ${userReacted ? 'background: #dbeafe; border-color: #3b82f6;' : ''}`;
-                btn.textContent = `${emoji} ${count}`;
-                btn.onclick = () => reactToWorkout(workoutId, emoji);
-                container.appendChild(btn);
-            });
-        }
-        
-        window.showEmojiPicker = function(workoutId) {
-            const picker = document.getElementById(`emoji-picker-${workoutId}`);
-            if (picker.classList.contains('hidden')) {
-                picker.classList.remove('hidden');
-            } else {
-                picker.classList.add('hidden');
-            }
-        };
-        
-        window.toggleEmojiInput = function(workoutId) {
-            const input = document.getElementById(`emoji-input-${workoutId}`);
-            if (input.classList.contains('hidden')) {
-                input.classList.remove('hidden');
-                document.getElementById(`emoji-field-${workoutId}`).focus();
-            } else {
-                input.classList.add('hidden');
-            }
-        };
-        
-        window.addEmojiReaction = async function(workoutId) {
-            const field = document.getElementById(`emoji-field-${workoutId}`);
-            const emoji = field.value.trim();
-            
-            if (!emoji) return;
-            
-            await reactToWorkout(workoutId, emoji);
-            field.value = '';
-            document.getElementById(`emoji-input-${workoutId}`).classList.add('hidden');
-        };
-        
-        window.reactToWorkout = async function(workoutId, emoji) {
-            // Check if user already reacted with this emoji
-            const { data: existing } = await supabaseClient
-                .from('reactions')
-                .select('*')
-                .eq('workout_id', workoutId)
-                .eq('user_id', currentUser.id)
-                .eq('emoji', emoji)
-                .single();
-            
-            if (existing) {
-                // Remove reaction (toggle off)
-                await supabaseClient
-                    .from('reactions')
-                    .delete()
-                    .eq('id', existing.id);
-            } else {
-                // Add reaction
-                await supabaseClient
-                    .from('reactions')
-                    .insert({
-                        workout_id: workoutId,
-                        user_id: currentUser.id,
-                        emoji: emoji
-                    });
-            }
-            
-            // Refresh feed to show updated counts
-            await renderFeed();
-        };
-        
-        window.toggleComments = function(workoutId) {
-            const commentsDiv = document.getElementById(`comments-${workoutId}`);
-            if (commentsDiv.classList.contains('hidden')) {
-                commentsDiv.classList.remove('hidden');
-            } else {
-                commentsDiv.classList.add('hidden');
-            }
-        };
-        
-        window.addComment = async function(workoutId, parentCommentId = null) {
-            const inputId = parentCommentId ? `reply-input-${parentCommentId}` : `comment-input-${workoutId}`;
-            const input = document.getElementById(inputId);
-            const content = input.value.trim();
-            
-            if (!content) return;
-            
-            await supabaseClient
-                .from('comments')
-                .insert({
-                    workout_id: workoutId,
-                    user_id: currentUser.id,
-                    parent_comment_id: parentCommentId,
-                    content: content
-                });
-            
-            input.value = '';
-            
-            // Refresh feed to show new comment
-            await renderFeed();
-        };
-        
-        function renderComments(workoutId, comments) {
-            const container = document.getElementById(`comment-list-${workoutId}`);
-            if (!container) return;
-            
-            // Separate top-level comments and replies
-            const topLevel = comments.filter(c => !c.parent_comment_id);
-            const replies = comments.filter(c => c.parent_comment_id);
-            
-            container.innerHTML = '';
-            
-            topLevel.forEach(comment => {
-                const commentReplies = replies.filter(r => r.parent_comment_id === comment.id);
-                const userLabel = comment.user_id === currentUser.id ? 'You' : `User ${comment.user_id.slice(0, 8)}`;
-                const timestamp = new Date(comment.created_at);
-                const timeAgo = getTimeAgo(timestamp);
-                
-                const commentDiv = document.createElement('div');
-                commentDiv.style.cssText = 'margin-bottom: 1rem; padding: 0.75rem; background: #f8fafc; border-radius: 0.5rem;';
-                commentDiv.innerHTML = `
-                    <div class="flex mb-1" style="justify-content: space-between; align-items: center;">
-                        <p class="text-sm font-bold">${userLabel}</p>
-                        <p class="text-xs text-gray">${timeAgo}</p>
-                    </div>
-                    <p class="text-sm mb-2">${comment.content}</p>
-                    <button class="text-xs" style="color: #3b82f6; background: none; border: none; cursor: pointer;" onclick="toggleReplyInput('${comment.id}')">Reply</button>
-                    
-                    <div id="reply-input-container-${comment.id}" class="hidden" style="margin-top: 0.5rem;">
-                        <div class="flex gap-2">
-                            <input type="text" id="reply-input-${comment.id}" placeholder="Write a reply..." style="flex: 1; font-size: 0.875rem;">
-                            <button class="btn btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;" onclick="addComment('${workoutId}', '${comment.id}')">Reply</button>
-                        </div>
-                    </div>
-                    
-                    <div style="margin-left: 1rem; margin-top: 0.5rem;">
-                        ${commentReplies.map(reply => {
-                            const replyUser = reply.user_id === currentUser.id ? 'You' : `User ${reply.user_id.slice(0, 8)}`;
-                            const replyTime = getTimeAgo(new Date(reply.created_at));
-                            return `
-                                <div style="padding: 0.5rem; background: white; border-radius: 0.25rem; margin-bottom: 0.5rem;">
-                                    <div class="flex mb-1" style="justify-content: space-between;">
-                                        <p class="text-xs font-bold">${replyUser}</p>
-                                        <p class="text-xs text-gray">${replyTime}</p>
-                                    </div>
-                                    <p class="text-xs">${reply.content}</p>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `;
-                container.appendChild(commentDiv);
-            });
-        }
-        
-        window.toggleReplyInput = function(commentId) {
-            const replyContainer = document.getElementById(`reply-input-container-${commentId}`);
-            if (replyContainer.classList.contains('hidden')) {
-                replyContainer.classList.remove('hidden');
-                document.getElementById(`reply-input-${commentId}`).focus();
-            } else {
-                replyContainer.classList.add('hidden');
-            }
-        };
-        
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            
-            if (seconds < 60) return 'just now';
-            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-            if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-            if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
-            return date.toLocaleDateString();
-        }
-        
-        // Start app
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
