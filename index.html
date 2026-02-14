@@ -1202,16 +1202,16 @@
                     dayCell.onmouseout = () => dayCell.style.background = isToday ? '#eff6ff' : 'white';
                 }
                 
-                const dotsHTML = dayWorkouts.slice(0, 6).map(w => {
+                const dotsHTML = dayWorkouts.slice(0, 3).map(w => {
                     const cat = workoutCategories.find(c => c.name === w.type);
-                    return `<span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'}; width: 0.5rem; height: 0.5rem; margin: 0.125rem; flex-shrink: 0;"></span>`;
+                    return `<span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'}; width: 0.4rem; height: 0.4rem; margin: 0.0625rem; flex-shrink: 0;"></span>`;
                 }).join('');
                 
-                const extraCount = dayWorkouts.length > 6 ? `<span style="font-size: 0.625rem; color: #64748b;">+${dayWorkouts.length - 6}</span>` : '';
+                const extraCount = dayWorkouts.length > 3 ? `<span style="font-size: 0.5rem; color: #64748b; margin-left: 0.125rem;">+${dayWorkouts.length - 3}</span>` : '';
                 
                 dayCell.innerHTML = `
-                    <div style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.125rem; flex-shrink: 0;">${day}</div>
-                    <div style="display: flex; flex-wrap: wrap; overflow: hidden; flex: 1;">${dotsHTML}${extraCount}</div>
+                    <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.125rem; line-height: 1;">${day}</div>
+                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.0625rem;">${dotsHTML}${extraCount}</div>
                 `;
                 calendarGrid.appendChild(dayCell);
             }
