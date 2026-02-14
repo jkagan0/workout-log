@@ -722,7 +722,7 @@
                 card.innerHTML = `
                     <div class="flex gap-2" style="align-items: center;">
                         <span class="color-dot" style="background: ${cat.color};"></span>
-                        <h2 class="font-bold" style="font-size: 1.25rem;">${cat.name}</h2>
+                        <h2 class="font-bold" style="font-size: 1.25rem; font-family: 'Space Grotesk', sans-serif;">${cat.name}</h2>
                     </div>
                 `;
                 container.appendChild(card);
@@ -1250,7 +1250,7 @@
                     border: 1px solid ${isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)'};
                     border-radius: 0.5rem;
                     padding: 0.5rem;
-                    background: ${isToday ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)'};
+                    background: ${isToday ? 'rgba(0, 245, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)'};
                     backdrop-filter: blur(10px);
                     cursor: ${dayWorkouts.length > 0 ? 'pointer' : 'default'};
                     overflow: hidden;
