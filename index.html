@@ -918,7 +918,12 @@
         
         function addExercise(name) {
             // Check if we have saved preferences for this exercise
-            const savedMetrics = exercisePreferences[name] || ['reps', 'weight'];
+            let defaultMetrics = ['reps', 'weight'];
+            if (currentWorkout.name === 'Cardio') {
+                defaultMetrics = ['time', 'distance', 'speed', 'incline'];
+            }
+            
+            const savedMetrics = exercisePreferences[name] || defaultMetrics;
             
             const exercise = {
                 id: Date.now(),
@@ -983,10 +988,13 @@
                             ${DEFAULT_METRICS.concat(customMetrics).map(metric => {
                                 const checked = ex.metrics.includes(metric) ? 'checked' : '';
                                 const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                                const isCustom = customMetrics.includes(metric);
+                                const deleteBtn = isCustom ? `<button onclick="deleteCustomMetric('${metric}', ${ex.id}); event.stopPropagation();" style="background: none; border: none; color: rgba(239, 68, 68, 0.7); cursor: pointer; font-size: 0.875rem; padding: 0 0.25rem; margin-left: auto;" title="Delete this metric">×</button>` : '';
                                 return `
                                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
                                         <input type="checkbox" ${checked} onchange="toggleMetric(${ex.id}, '${metric}')" style="width: auto;">
                                         <span class="text-sm">${label}</span>
+                                        ${deleteBtn}
                                     </label>
                                 `;
                             }).join('')}
@@ -1081,7 +1089,12 @@
                 }
             });
             
+            // Re-render but keep editor open
+            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
             renderExercises();
+            if (editorWasOpen) {
+                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
+            }
             saveDraft();
         };
         
@@ -1114,8 +1127,40 @@
             }
             
             input.value = '';
+            
+            // Re-render but keep editor open
+            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
             renderExercises();
+            if (editorWasOpen) {
+                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
+            }
             saveDraft();
+        };
+        
+        window.deleteCustomMetric = async function(metricName, exerciseId) {
+            if (!confirm(`Delete "${metricName}" from your custom metrics library? This won't affect exercises already using it.`)) {
+                return;
+            }
+            
+            // Remove from custom metrics array
+            const index = customMetrics.indexOf(metricName);
+            if (index > -1) {
+                customMetrics.splice(index, 1);
+            }
+            
+            // Delete from Supabase
+            await supabaseClient
+                .from('custom_metrics')
+                .delete()
+                .eq('user_id', currentUser.id)
+                .eq('metric_name', metricName);
+            
+            // Re-render and keep editor open
+            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
+            renderExercises();
+            if (editorWasOpen) {
+                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
+            }
         };
         
         // Timer
