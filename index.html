@@ -332,6 +332,14 @@
             </div>
         </div>
         
+        <div class="exercise-box mb-4">
+            <h2 class="font-bold mb-4">Data Management</h2>
+            <p class="text-sm text-gray mb-4">Import your old workout data or export for backup</p>
+            <input type="file" id="importFile" accept=".json" style="display: none;">
+            <button class="btn btn-secondary mb-2" id="importDataBtn" style="width: 100%;">Import Old Data</button>
+            <button class="btn btn-secondary" id="exportDataBtn" style="width: 100%;">Export All Data</button>
+        </div>
+        
         <div class="exercise-box">
             <h2 class="font-bold mb-4">Account</h2>
             <p class="text-sm text-gray mb-4" id="userEmailDisplay"></p>
@@ -342,7 +350,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // Global variables
-        let supabase;
+        let supabaseClient;
         let currentUser = null;
         let workoutCategories = [];
         let currentWorkout = null;
@@ -359,22 +367,22 @@
             console.log('Init starting...');
             
             if (typeof window.supabase === 'undefined') {
-                console.error('Supabase not loaded');
+                console.error('Supabase library not loaded');
                 alert('Failed to load. Please refresh.');
                 return;
             }
             
-            console.log('Supabase loaded');
+            console.log('Supabase library loaded');
             
             const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             
             console.log('Setting up event listeners...');
             setupEventListeners();
             console.log('Event listeners set up');
             
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await supabaseClient.auth.getSession();
             
             if (session) {
                 currentUser = session.user;
@@ -436,6 +444,13 @@
             addListener('workoutDate', 'change', updateWorkoutDateTime);
             addListener('workoutTime', 'change', updateWorkoutDateTime);
             addListener('addCategoryBtn', 'click', addCategory);
+            addListener('importDataBtn', 'click', () => document.getElementById('importFile').click());
+            addListener('exportDataBtn', 'click', exportData);
+            
+            const importFile = document.getElementById('importFile');
+            if (importFile) {
+                importFile.addEventListener('change', importData);
+            }
             
             console.log('All event listeners setup complete');
         }
@@ -444,7 +459,7 @@
             showLoadingScreen();
             
             // Load categories
-            const { data: categories } = await supabase
+            const { data: categories } = await supabaseClient
                 .from('workout_categories')
                 .select('*')
                 .eq('user_id', currentUser.id)
@@ -469,7 +484,7 @@
             ];
             
             for (const cat of defaults) {
-                const { data } = await supabase
+                const { data } = await supabaseClient
                     .from('workout_categories')
                     .insert({ user_id: currentUser.id, name: cat.name, color: cat.color })
                     .select()
@@ -513,7 +528,7 @@
                 return;
             }
             
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
             
             if (error) {
                 showAuthError(error.message);
@@ -547,9 +562,9 @@
                 return;
             }
             
-            console.log('Calling supabase.auth.signUp...');
+            console.log('Calling supabaseClient.auth.signUp...');
             
-            const { error } = await supabase.auth.signUp({ email, password });
+            const { error } = await supabaseClient.auth.signUp({ email, password });
             
             console.log('Signup result:', error);
             
@@ -562,7 +577,7 @@
         }
         
         async function handleLogout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             currentUser = null;
             workoutCategories = [];
             showAuthScreen();
@@ -690,7 +705,7 @@
                 return;
             }
             
-            const { data: workouts } = await supabase
+            const { data: workouts } = await supabaseClient
                 .from('workouts')
                 .select(`
                     *,
@@ -914,7 +929,7 @@
             const notes = document.getElementById('workoutNotes').value;
             
             // Insert workout
-            const { data: workout, error: workoutError } = await supabase
+            const { data: workout, error: workoutError } = await supabaseClient
                 .from('workouts')
                 .insert({
                     user_id: currentUser.id,
@@ -935,7 +950,7 @@
             for (let i = 0; i < exercises.length; i++) {
                 const ex = exercises[i];
                 
-                const { data: exercise, error: exError } = await supabase
+                const { data: exercise, error: exError } = await supabaseClient
                     .from('exercises')
                     .insert({
                         workout_id: workout.id,
@@ -948,7 +963,7 @@
                 if (exercise) {
                     for (let j = 0; j < ex.sets.length; j++) {
                         const set = ex.sets[j];
-                        await supabase
+                        await supabaseClient
                             .from('sets')
                             .insert({
                                 exercise_id: exercise.id,
@@ -974,7 +989,7 @@
             const container = document.getElementById('historyContent');
             container.innerHTML = '';
             
-            const { data: workouts } = await supabase
+            const { data: workouts } = await supabaseClient
                 .from('workouts')
                 .select(`
                     *,
@@ -1160,7 +1175,7 @@
         
         window.deleteWorkout = async function(workoutId) {
             if (confirm('Delete this workout? This cannot be undone.')) {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('workouts')
                     .delete()
                     .eq('id', workoutId);
@@ -1200,7 +1215,7 @@
                 return;
             }
             
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('workout_categories')
                 .insert({
                     user_id: currentUser.id,
@@ -1222,7 +1237,7 @@
         
         window.deleteCategory = async function(categoryId) {
             if (confirm('Delete this category? Workouts using it will remain.')) {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('workout_categories')
                     .delete()
                     .eq('id', categoryId);
@@ -1233,6 +1248,124 @@
                 }
             }
         };
+        
+        // Import/Export Functions
+        async function exportData() {
+            const { data: workouts } = await supabaseClient
+                .from('workouts')
+                .select(`
+                    *,
+                    exercises (
+                        *,
+                        sets (*)
+                    )
+                `)
+                .eq('user_id', currentUser.id)
+                .order('start_time', { ascending: false });
+            
+            if (!workouts) {
+                alert('No data to export');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(workouts, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `workout-data-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+            alert('Data exported successfully!');
+        }
+        
+        async function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (!Array.isArray(data)) {
+                        alert('Invalid data format');
+                        return;
+                    }
+                    
+                    let imported = 0;
+                    
+                    for (const oldWorkout of data) {
+                        // Convert old format to new Supabase format
+                        const startTime = oldWorkout.startTime || new Date().toISOString();
+                        const endTime = oldWorkout.endTime || new Date().toISOString();
+                        const workoutType = oldWorkout.type || 'Chest';
+                        const notes = oldWorkout.notes || '';
+                        
+                        // Insert workout
+                        const { data: newWorkout, error: workoutError } = await supabaseClient
+                            .from('workouts')
+                            .insert({
+                                user_id: currentUser.id,
+                                type: workoutType,
+                                start_time: startTime,
+                                end_time: endTime,
+                                notes: notes
+                            })
+                            .select()
+                            .single();
+                        
+                        if (workoutError || !newWorkout) continue;
+                        
+                        // Insert exercises
+                        if (oldWorkout.exercises && Array.isArray(oldWorkout.exercises)) {
+                            for (let i = 0; i < oldWorkout.exercises.length; i++) {
+                                const oldExercise = oldWorkout.exercises[i];
+                                
+                                const { data: newExercise } = await supabaseClient
+                                    .from('exercises')
+                                    .insert({
+                                        workout_id: newWorkout.id,
+                                        name: oldExercise.name,
+                                        exercise_order: i
+                                    })
+                                    .select()
+                                    .single();
+                                
+                                if (newExercise && oldExercise.sets && Array.isArray(oldExercise.sets)) {
+                                    for (let j = 0; j < oldExercise.sets.length; j++) {
+                                        const oldSet = oldExercise.sets[j];
+                                        
+                                        await supabaseClient
+                                            .from('sets')
+                                            .insert({
+                                                exercise_id: newExercise.id,
+                                                set_order: j,
+                                                reps: oldSet.reps || null,
+                                                weight: oldSet.weight || null,
+                                                time: oldSet.time || null,
+                                                distance: oldSet.distance || null,
+                                                speed: oldSet.speed || null,
+                                                incline: oldSet.incline || null,
+                                                notes: oldSet.notes || null
+                                            });
+                                    }
+                                }
+                            }
+                        }
+                        
+                        imported++;
+                    }
+                    
+                    alert(`Successfully imported ${imported} workouts!`);
+                    event.target.value = ''; // Reset file input
+                } catch (error) {
+                    console.error('Import error:', error);
+                    alert('Error importing data: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
         
         // Start app
         if (document.readyState === 'loading') {
