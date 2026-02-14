@@ -201,12 +201,33 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Initialize Supabase
-        const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
-        let currentUser = null;
+        // Wait for DOM and Supabase library to load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded');
+            console.log('Supabase available:', typeof window.supabase !== 'undefined');
+            
+            // Initialize Supabase
+            const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
+            
+            if (typeof window.supabase === 'undefined') {
+                console.error('Supabase library failed to load');
+                document.getElementById('authError').textContent = 'Failed to load. Please refresh the page.';
+                document.getElementById('authError').classList.remove('hidden');
+                return;
+            }
+            
+            window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            
+            // Make functions global so onclick can access them
+            window.showLogin = showLogin;
+            window.showSignup = showSignup;
+            window.handleLogin = handleLogin;
+            window.handleSignup = handleSignup;
+            window.handleLogout = handleLogout;
+            
+            let currentUser = null;
+            let supabase = window.supabase;
         
         // Check auth state on load
         async function init() {
@@ -266,9 +287,13 @@
         }
         
         async function handleSignup() {
+            console.log('handleSignup called');
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
+            
+            console.log('Email:', email);
+            console.log('Password length:', password.length);
             
             if (!email || !password) {
                 showAuthError('Please enter email and password');
@@ -285,10 +310,14 @@
                 return;
             }
             
+            console.log('Attempting signup...');
+            
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password
             });
+            
+            console.log('Signup result:', { data, error });
             
             if (error) {
                 showAuthError(error.message);
@@ -346,6 +375,8 @@
         
         // Initialize on page load
         init();
+        
+        }); // End DOMContentLoaded
     </script>
 </body>
 </html>
