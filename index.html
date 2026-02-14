@@ -254,6 +254,14 @@
     
     <!-- Workout Screen -->
     <div id="workoutScreen" class="container hidden">
+        <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary" id="backFromWorkoutBtn">← Back</button>
+            <div class="flex gap-2">
+                <button class="btn btn-secondary" id="workoutHistoryBtn">Activity</button>
+                <button class="btn btn-secondary" id="workoutSettingsBtn">⚙️</button>
+            </div>
+        </div>
+        
         <div class="mb-4 flex" style="justify-content: space-between; align-items: flex-start;">
             <div>
                 <div class="flex gap-2 mb-2" style="align-items: center;">
@@ -446,6 +454,9 @@
             addListener('addCategoryBtn', 'click', addCategory);
             addListener('importDataBtn', 'click', () => document.getElementById('importFile').click());
             addListener('exportDataBtn', 'click', exportData);
+            addListener('backFromWorkoutBtn', 'click', showHome);
+            addListener('workoutHistoryBtn', 'click', showHistory);
+            addListener('workoutSettingsBtn', 'click', showSettings);
             
             const importFile = document.getElementById('importFile');
             if (importFile) {
