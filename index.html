@@ -430,6 +430,11 @@
         let workoutInfoTimeout = null;
         let viewingMonth = new Date().getMonth();
         let viewingYear = new Date().getFullYear();
+        let customMetrics = []; // User's custom metrics library
+        let exercisePreferences = {}; // Per-exercise metric preferences
+        
+        // Default available metrics
+        const DEFAULT_METRICS = ['reps', 'weight', 'time', 'distance', 'speed', 'incline'];
         
         // Initialize
         async function init() {
@@ -542,6 +547,29 @@
             } else {
                 // Create default categories
                 await createDefaultCategories();
+            }
+            
+            // Load custom metrics
+            const { data: metrics } = await supabaseClient
+                .from('custom_metrics')
+                .select('*')
+                .eq('user_id', currentUser.id);
+            
+            if (metrics) {
+                customMetrics = metrics.map(m => m.metric_name);
+            }
+            
+            // Load exercise preferences
+            const { data: prefs } = await supabaseClient
+                .from('exercise_preferences')
+                .select('*')
+                .eq('user_id', currentUser.id);
+            
+            if (prefs) {
+                exercisePreferences = {};
+                prefs.forEach(p => {
+                    exercisePreferences[p.exercise_name] = p.metrics;
+                });
             }
         }
         
@@ -889,16 +917,26 @@
         }
         
         function addExercise(name) {
+            // Check if we have saved preferences for this exercise
+            const savedMetrics = exercisePreferences[name] || ['reps', 'weight'];
+            
             const exercise = {
                 id: Date.now(),
                 name: name,
-                sets: currentWorkout.name === 'Cardio' 
-                    ? [{ time: '', distance: '', speed: '', incline: '', notes: '' }]
-                    : [{ reps: '', weight: '' }]
+                metrics: savedMetrics,
+                sets: [createEmptySet(savedMetrics)]
             };
             exercises.push(exercise);
             renderExercises();
             saveDraft(); // Auto-save
+        }
+        
+        function createEmptySet(metrics) {
+            const set = {};
+            metrics.forEach(metric => {
+                set[metric] = '';
+            });
+            return set;
         }
         
         function renderExercises() {
@@ -911,48 +949,58 @@
                 
                 let setsHTML = '';
                 ex.sets.forEach((set, idx) => {
-                    if (currentWorkout.name === 'Cardio') {
-                        setsHTML += `
-                            <div style="background: #f8fafc; padding: 0.75rem; border-radius: 0.25rem; margin-bottom: 0.5rem;">
-                                <div class="grid-2 mb-2">
-                                    <div>
-                                        <label class="text-xs text-gray">Time (min)</label>
-                                        <input type="number" value="${set.time}" onchange="updateSet(${ex.id}, ${idx}, 'time', this.value)">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray">Distance (mi)</label>
-                                        <input type="number" step="0.1" value="${set.distance}" onchange="updateSet(${ex.id}, ${idx}, 'distance', this.value)">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray">Speed (mph)</label>
-                                        <input type="number" step="0.1" value="${set.speed}" onchange="updateSet(${ex.id}, ${idx}, 'speed', this.value)">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs text-gray">Incline (%)</label>
-                                        <input type="number" step="0.1" value="${set.incline}" onchange="updateSet(${ex.id}, ${idx}, 'incline', this.value)">
-                                    </div>
-                                </div>
+                    const fields = ex.metrics.map(metric => {
+                        const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                        return `
+                            <div>
+                                <label class="text-xs text-gray">${label}</label>
+                                <input type="number" step="0.1" placeholder="${label}" value="${set[metric] || ''}" onchange="updateSet(${ex.id}, ${idx}, '${metric}', this.value)" style="flex: 1;">
                             </div>
                         `;
-                    } else {
-                        setsHTML += `
-                            <div class="flex gap-2 mb-2" style="align-items: center;">
-                                <span style="width: 2rem; font-weight: 600;">${idx + 1}</span>
-                                <input type="number" placeholder="Reps" value="${set.reps}" onchange="updateSet(${ex.id}, ${idx}, 'reps', this.value)" style="flex: 1;">
-                                <input type="number" placeholder="Weight" value="${set.weight}" onchange="updateSet(${ex.id}, ${idx}, 'weight', this.value)" style="flex: 1;">
+                    }).join('');
+                    
+                    setsHTML += `
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.1);">
+                            <div class="grid-2 mb-2">
+                                ${fields}
                             </div>
-                        `;
-                    }
+                        </div>
+                    `;
                 });
                 
                 div.innerHTML = `
                     <div class="flex mb-2" style="justify-content: space-between;">
                         <h3 class="font-bold">${ex.name}</h3>
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
+                        <div class="flex gap-2">
+                            <button style="background: none; border: none; color: rgba(0, 245, 255, 0.7); cursor: pointer; font-size: 1rem; padding: 0.25rem 0.5rem;" onclick="showMetricsEditor(${ex.id})" title="Edit Metrics">⚙️</button>
+                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
+                        </div>
                     </div>
+                    
+                    <div id="metrics-editor-${ex.id}" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 245, 255, 0.2);">
+                        <p class="text-sm font-bold mb-2">Select Metrics to Track:</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+                            ${DEFAULT_METRICS.concat(customMetrics).map(metric => {
+                                const checked = ex.metrics.includes(metric) ? 'checked' : '';
+                                const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                                return `
+                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                        <input type="checkbox" ${checked} onchange="toggleMetric(${ex.id}, '${metric}')" style="width: auto;">
+                                        <span class="text-sm">${label}</span>
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="custom-metric-${ex.id}" placeholder="Add custom metric..." style="flex: 1;">
+                            <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="addCustomMetric(${ex.id})">+ Add</button>
+                        </div>
+                        <button class="btn btn-secondary" style="width: 100%;" onclick="closeMetricsEditor(${ex.id})">Done</button>
+                    </div>
+                    
                     ${setsHTML}
                     <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
-                        + Add ${currentWorkout.name === 'Cardio' ? 'Session' : 'Set'}
+                        + Add Set
                     </button>
                 `;
                 container.appendChild(div);
@@ -970,10 +1018,7 @@
         window.addSet = function(exerciseId) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (exercise) {
-                const newSet = currentWorkout.name === 'Cardio'
-                    ? { time: '', distance: '', speed: '', incline: '', notes: '' }
-                    : { reps: '', weight: '' };
-                exercise.sets.push(newSet);
+                exercise.sets.push(createEmptySet(exercise.metrics));
                 renderExercises();
                 saveDraft(); // Auto-save
             }
@@ -983,6 +1028,94 @@
             exercises = exercises.filter(ex => ex.id !== exerciseId);
             renderExercises();
             saveDraft(); // Auto-save
+        };
+        
+        window.showMetricsEditor = function(exerciseId) {
+            const editor = document.getElementById(`metrics-editor-${exerciseId}`);
+            editor.classList.remove('hidden');
+        };
+        
+        window.closeMetricsEditor = async function(exerciseId) {
+            const editor = document.getElementById(`metrics-editor-${exerciseId}`);
+            editor.classList.add('hidden');
+            
+            // Save preference for this exercise name to Supabase
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise && exercise.metrics.length > 0) {
+                // Update local state
+                exercisePreferences[exercise.name] = exercise.metrics;
+                
+                // Save to Supabase (upsert)
+                await supabaseClient
+                    .from('exercise_preferences')
+                    .upsert({
+                        user_id: currentUser.id,
+                        exercise_name: exercise.name,
+                        metrics: exercise.metrics,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id,exercise_name'
+                    });
+            }
+        };
+        
+        window.toggleMetric = function(exerciseId, metric) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            
+            const index = exercise.metrics.indexOf(metric);
+            if (index > -1) {
+                // Remove metric
+                exercise.metrics.splice(index, 1);
+            } else {
+                // Add metric
+                exercise.metrics.push(metric);
+            }
+            
+            // Update all sets to have/remove this metric
+            exercise.sets.forEach(set => {
+                if (index > -1) {
+                    delete set[metric];
+                } else {
+                    set[metric] = '';
+                }
+            });
+            
+            renderExercises();
+            saveDraft();
+        };
+        
+        window.addCustomMetric = async function(exerciseId) {
+            const input = document.getElementById(`custom-metric-${exerciseId}`);
+            const metricName = input.value.trim().toLowerCase();
+            
+            if (!metricName) return;
+            
+            // Add to global custom metrics if not already there
+            if (!customMetrics.includes(metricName) && !DEFAULT_METRICS.includes(metricName)) {
+                customMetrics.push(metricName);
+                
+                // Save to Supabase
+                await supabaseClient
+                    .from('custom_metrics')
+                    .insert({
+                        user_id: currentUser.id,
+                        metric_name: metricName
+                    });
+            }
+            
+            // Add to this exercise
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise && !exercise.metrics.includes(metricName)) {
+                exercise.metrics.push(metricName);
+                exercise.sets.forEach(set => {
+                    set[metricName] = '';
+                });
+            }
+            
+            input.value = '';
+            renderExercises();
+            saveDraft();
         };
         
         // Timer
