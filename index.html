@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Workout Tracker</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=DM+Sans:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
         
         * {
             margin: 0;
@@ -15,9 +15,10 @@
         
         body {
             font-family: 'Inter', sans-serif;
-            background: white;
-            color: #0f172a;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
             line-height: 1.5;
+            min-height: 100vh;
         }
         
         .container {
@@ -27,77 +28,121 @@
         }
         
         .title-text {
-            font-family: 'DM Sans', sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
             letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #00f5ff 0%, #7b2ff7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
         
         .btn {
             padding: 0.75rem 1.5rem;
             border: none;
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            position: relative;
+            overflow: hidden;
         }
         
         .btn-primary {
-            background: #3b82f6;
-            color: white;
+            background: linear-gradient(135deg, #00f5ff 0%, #7b2ff7 100%);
+            color: #0f0f23;
+            font-weight: 600;
+            box-shadow: 0 4px 20px rgba(0, 245, 255, 0.3);
         }
         
         .btn-primary:hover {
-            background: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(0, 245, 255, 0.5);
         }
         
         .btn-secondary {
-            background: #f1f5f9;
-            border: 2px solid #cbd5e1;
-            color: #0f172a;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            color: #e0e0e0;
         }
         
         .btn-secondary:hover {
-            background: #e2e8f0;
+            background: rgba(0, 245, 255, 0.1);
+            border-color: rgba(0, 245, 255, 0.4);
+            transform: translateY(-1px);
         }
         
         .workout-card {
-            border: 2px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.15);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            border-radius: 0.5rem;
+            border-radius: 1rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        
+        .workout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #00f5ff, #7b2ff7);
+            opacity: 0;
+            transition: opacity 0.3s;
         }
         
         .workout-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 245, 255, 0.2);
+            border-color: rgba(0, 245, 255, 0.4);
+        }
+        
+        .workout-card:hover::before {
+            opacity: 1;
         }
         
         .exercise-box {
-            border: 2px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.1);
             padding: 1rem;
             margin-bottom: 1rem;
-            border-radius: 0.5rem;
-            background: white;
+            border-radius: 0.75rem;
         }
         
         input, textarea {
             width: 100%;
-            padding: 0.5rem 0.75rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 0.25rem;
+            padding: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 0.5rem;
             font-size: 1rem;
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s;
         }
         
         input:focus, textarea:focus {
             outline: none;
-            border-color: #3b82f6;
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.05);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.2);
+        }
+        
+        input::placeholder, textarea::placeholder {
+            color: rgba(224, 224, 224, 0.4);
         }
         
         .timer {
-            border: 4px solid #3b82f6;
+            border: 3px solid #00f5ff;
             border-radius: 50%;
             width: 5rem;
             height: 5rem;
@@ -106,7 +151,9 @@
             justify-content: center;
             font-size: 1.25rem;
             font-weight: 700;
-            color: #3b82f6;
+            color: #00f5ff;
+            background: rgba(0, 245, 255, 0.05);
+            box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
         }
         
         .color-dot {
@@ -114,6 +161,7 @@
             height: 1rem;
             border-radius: 50%;
             display: inline-block;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
         .hidden {
@@ -125,14 +173,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
         }
         
         .auth-box {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(0, 245, 255, 0.1);
+            border: 1px solid rgba(0, 245, 255, 0.2);
             width: 90%;
             max-width: 400px;
         }
@@ -146,17 +196,18 @@
         .text-center { text-align: center; }
         .text-sm { font-size: 0.875rem; }
         .text-xs { font-size: 0.75rem; }
-        .text-gray { color: #64748b; }
+        .text-gray { color: rgba(224, 224, 224, 0.6); }
         .font-bold { font-weight: 700; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
         
         .error {
-            background: #fee2e2;
-            color: #991b1b;
+            background: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
             padding: 0.75rem;
             border-radius: 0.5rem;
             margin-bottom: 1rem;
             font-size: 0.875rem;
+            border: 1px solid rgba(239, 68, 68, 0.3);
         }
         
         .loading {
@@ -165,8 +216,8 @@
         }
         
         .spinner {
-            border: 3px solid #f3f4f6;
-            border-top: 3px solid #3b82f6;
+            border: 3px solid rgba(0, 245, 255, 0.1);
+            border-top: 3px solid #00f5ff;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -178,13 +229,21 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        
+        /* Neon accent line */
+        .neon-line {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f5ff, #7b2ff7, transparent);
+            margin: 1rem 0;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
     </style>
 </head>
 <body>
     <!-- Auth Screen -->
     <div id="authScreen" class="auth-container">
         <div class="auth-box">
-            <h1 class="title-text text-center mb-4" style="font-size: 2rem; color: #667eea;">Workout Tracker</h1>
+            <h1 class="title-text text-center mb-4" style="font-size: 2rem;">Workout Tracker</h1>
             
             <div id="authError" class="error hidden"></div>
             
@@ -244,8 +303,8 @@
         <div class="mb-4 flex" style="justify-content: space-between; align-items: center;">
             <h1 class="title-text" style="font-size: 2rem;">Workout</h1>
             <div class="flex gap-2">
-                <button class="btn btn-secondary" id="feedBtn">👥 Feed</button>
-                <button class="btn btn-secondary" id="settingsBtn">⚙️</button>
+                <button class="btn btn-secondary" id="feedBtn" style="padding: 0.5rem 0.75rem;">👥</button>
+                <button class="btn btn-secondary" id="settingsBtn" style="padding: 0.5rem 0.75rem;">⚙️</button>
                 <button class="btn btn-secondary" id="historyBtn">Activity</button>
             </div>
         </div>
@@ -1581,11 +1640,23 @@
                     <p class="text-sm mb-2"><strong>${workout.type}</strong> • ${duration} min • ${totalSets} sets</p>
                     ${workout.notes ? `<p class="text-sm text-gray mb-2" style="font-style: italic;">"${workout.notes}"</p>` : ''}
                     
+                    <!-- Existing reactions display -->
+                    <div id="reactions-display-${workout.id}" class="flex gap-1" style="flex-wrap: wrap; margin-top: 0.5rem;">
+                    </div>
+                    
+                    <!-- Add reaction/comment buttons -->
                     <div class="flex gap-2" style="border-top: 1px solid #e2e8f0; padding-top: 0.5rem; margin-top: 0.5rem;">
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; ${userReactedMuscle ? 'background: #dbeafe;' : ''}" onclick="reactToWorkout('${workout.id}', '💪')">💪 ${muscleCount}</button>
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; ${userReactedFire ? 'background: #dbeafe;' : ''}" onclick="reactToWorkout('${workout.id}', '🔥')">🔥 ${fireCount}</button>
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; ${userReactedClap ? 'background: #dbeafe;' : ''}" onclick="reactToWorkout('${workout.id}', '👏')">👏 ${clapCount}</button>
-                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; margin-left: auto;" onclick="toggleComments('${workout.id}')">💬 ${workoutComments.length}</button>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="toggleEmojiInput('${workout.id}')">+ React</button>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="toggleComments('${workout.id}')">💬 Comment (${workoutComments.length})</button>
+                    </div>
+                    
+                    <!-- Emoji input (hidden by default) -->
+                    <div id="emoji-input-${workout.id}" class="hidden" style="margin-top: 0.5rem; padding: 0.5rem; background: #f8fafc; border-radius: 0.5rem;">
+                        <div class="flex gap-2">
+                            <input type="text" id="emoji-field-${workout.id}" placeholder="Type or paste an emoji..." style="flex: 1; font-size: 1.5rem; text-align: center;" maxlength="2">
+                            <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="addEmojiReaction('${workout.id}')">Add</button>
+                        </div>
+                        <p class="text-xs text-gray mt-2">Tip: On mobile, use your emoji keyboard. On desktop, Windows: Win + . or Mac: Cmd + Ctrl + Space</p>
                     </div>
                     
                     <div id="comments-${workout.id}" class="hidden" style="margin-top: 1rem; border-top: 1px solid #e2e8f0; padding-top: 1rem;">
@@ -1598,10 +1669,67 @@
                 `;
                 container.appendChild(feedItem);
                 
+                // Render existing reactions
+                renderReactions(workout.id, workoutReactions);
+                
                 // Render existing comments
                 renderComments(workout.id, workoutComments);
             }
         }
+        
+        function renderReactions(workoutId, reactions) {
+            const container = document.getElementById(`reactions-display-${workoutId}`);
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            // Group by emoji
+            const emojiCounts = {};
+            Object.keys(reactions).forEach(emoji => {
+                emojiCounts[emoji] = reactions[emoji].length;
+            });
+            
+            // Display each emoji with count
+            Object.entries(emojiCounts).forEach(([emoji, count]) => {
+                const userReacted = reactions[emoji]?.some(r => r.user_id === currentUser.id);
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-secondary';
+                btn.style.cssText = `padding: 0.25rem 0.5rem; font-size: 0.875rem; ${userReacted ? 'background: #dbeafe; border-color: #3b82f6;' : ''}`;
+                btn.textContent = `${emoji} ${count}`;
+                btn.onclick = () => reactToWorkout(workoutId, emoji);
+                container.appendChild(btn);
+            });
+        }
+        
+        window.showEmojiPicker = function(workoutId) {
+            const picker = document.getElementById(`emoji-picker-${workoutId}`);
+            if (picker.classList.contains('hidden')) {
+                picker.classList.remove('hidden');
+            } else {
+                picker.classList.add('hidden');
+            }
+        };
+        
+        window.toggleEmojiInput = function(workoutId) {
+            const input = document.getElementById(`emoji-input-${workoutId}`);
+            if (input.classList.contains('hidden')) {
+                input.classList.remove('hidden');
+                document.getElementById(`emoji-field-${workoutId}`).focus();
+            } else {
+                input.classList.add('hidden');
+            }
+        };
+        
+        window.addEmojiReaction = async function(workoutId) {
+            const field = document.getElementById(`emoji-field-${workoutId}`);
+            const emoji = field.value.trim();
+            
+            if (!emoji) return;
+            
+            await reactToWorkout(workoutId, emoji);
+            field.value = '';
+            document.getElementById(`emoji-input-${workoutId}`).classList.add('hidden');
+        };
         
         window.reactToWorkout = async function(workoutId, emoji) {
             // Check if user already reacted with this emoji
