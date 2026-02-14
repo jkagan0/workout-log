@@ -152,10 +152,10 @@
                     <input type="password" id="loginPassword" placeholder="••••••••">
                 </div>
                 
-                <button class="btn btn-primary" style="width: 100%;" onclick="handleLogin()">Log In</button>
+                <button class="btn btn-primary" style="width: 100%;" id="loginBtn">Log In</button>
                 
                 <p class="text-center text-sm text-gray mt-4">
-                    Don't have an account? <a href="#" onclick="showSignup(); return false;" style="color: #3b82f6;">Sign up</a>
+                    Don't have an account? <a href="#" id="showSignupLink" style="color: #3b82f6;">Sign up</a>
                 </p>
             </div>
             
@@ -175,10 +175,10 @@
                     <input type="password" id="signupPasswordConfirm" placeholder="••••••••">
                 </div>
                 
-                <button class="btn btn-primary" style="width: 100%;" onclick="handleSignup()">Sign Up</button>
+                <button class="btn btn-primary" style="width: 100%;" id="signupBtn">Sign Up</button>
                 
                 <p class="text-center text-sm text-gray mt-4">
-                    Already have an account? <a href="#" onclick="showLogin(); return false;" style="color: #3b82f6;">Log in</a>
+                    Already have an account? <a href="#" id="showLoginLink" style="color: #3b82f6;">Log in</a>
                 </p>
             </div>
         </div>
@@ -195,42 +195,47 @@
     <!-- Main App (placeholder for now) -->
     <div id="mainApp" class="hidden container">
         <h1 class="title-text">Welcome to Workout Tracker!</h1>
-        <p class="text-gray mt-4">Your workouts will appear here.</p>
-        <button class="btn btn-secondary mt-4" onclick="handleLogout()">Log Out</button>
+        <p class="text-gray mt-4" id="userEmail"></p>
+        <button class="btn btn-secondary mt-4" id="logoutBtn">Log Out</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Wait for DOM and Supabase library to load
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded');
-            console.log('Supabase available:', typeof window.supabase !== 'undefined');
+        // Global variables
+        let supabase;
+        let currentUser = null;
+        
+        // Initialize on load
+        async function init() {
+            console.log('Initializing app...');
+            
+            // Check if Supabase loaded
+            if (typeof window.supabase === 'undefined') {
+                alert('Failed to load. Please refresh the page.');
+                return;
+            }
             
             // Initialize Supabase
             const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
             
-            if (typeof window.supabase === 'undefined') {
-                console.error('Supabase library failed to load');
-                document.getElementById('authError').textContent = 'Failed to load. Please refresh the page.';
-                document.getElementById('authError').classList.remove('hidden');
-                return;
-            }
+            console.log('Supabase initialized');
             
-            window.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            // Set up event listeners
+            document.getElementById('loginBtn').addEventListener('click', handleLogin);
+            document.getElementById('signupBtn').addEventListener('click', handleSignup);
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            document.getElementById('showSignupLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                showSignup();
+            });
+            document.getElementById('showLoginLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                showLogin();
+            });
             
-            // Make functions global so onclick can access them
-            window.showLogin = showLogin;
-            window.showSignup = showSignup;
-            window.handleLogin = handleLogin;
-            window.handleSignup = handleSignup;
-            window.handleLogout = handleLogout;
-            
-            let currentUser = null;
-            let supabase = window.supabase;
-        
-        // Check auth state on load
-        async function init() {
+            // Check if user is already logged in
             const { data: { session } } = await supabase.auth.getSession();
             
             if (session) {
@@ -249,6 +254,7 @@
         }
         
         function showSignup() {
+            console.log('showSignup called');
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('signupForm').classList.remove('hidden');
             clearAuthError();
@@ -265,6 +271,7 @@
         }
         
         async function handleLogin() {
+            console.log('handleLogin called');
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             
@@ -293,7 +300,6 @@
             const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
             
             console.log('Email:', email);
-            console.log('Password length:', password.length);
             
             if (!email || !password) {
                 showAuthError('Please enter email and password');
@@ -322,10 +328,8 @@
             if (error) {
                 showAuthError(error.message);
             } else {
-                // Create default workout categories for new user
-                await createDefaultCategories(data.user.id);
-                currentUser = data.user;
-                showMainApp();
+                alert('Account created! Please check your email to verify your account, then log in.');
+                showLogin();
             }
         }
         
@@ -333,25 +337,6 @@
             await supabase.auth.signOut();
             currentUser = null;
             showAuthScreen();
-        }
-        
-        async function createDefaultCategories(userId) {
-            const defaultCategories = [
-                { name: 'Chest', color: '#3b82f6' },
-                { name: 'Back', color: '#10b981' },
-                { name: 'Legs', color: '#0ea5e9' },
-                { name: 'Shoulders', color: '#6366f1' },
-                { name: 'Arms', color: '#8b5cf6' },
-                { name: 'Cardio', color: '#06b6d4' }
-            ];
-            
-            for (const cat of defaultCategories) {
-                await supabase.from('workout_categories').insert({
-                    user_id: userId,
-                    name: cat.name,
-                    color: cat.color
-                });
-            }
         }
         
         // Screen management
@@ -371,12 +356,15 @@
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('loadingScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = `Logged in as: ${currentUser.email}`;
         }
         
-        // Initialize on page load
-        init();
-        
-        }); // End DOMContentLoaded
+        // Start the app when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
     </script>
 </body>
 </html>
