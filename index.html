@@ -386,36 +386,58 @@
         }
         
         function setupEventListeners() {
-            const loginBtn = document.getElementById('loginBtn');
-            const signupBtn = document.getElementById('signupBtn');
+            console.log('setupEventListeners called');
             
-            console.log('loginBtn:', loginBtn);
-            console.log('signupBtn:', signupBtn);
+            // Helper function to safely add listeners
+            const addListener = (id, event, handler) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener(event, handler);
+                    console.log(`Added listener to ${id}`);
+                } else {
+                    console.warn(`Element ${id} not found`);
+                }
+            };
             
-            if (!loginBtn || !signupBtn) {
-                console.error('Auth buttons not found!');
-                return;
+            // Auth listeners
+            addListener('loginBtn', 'click', handleLogin);
+            addListener('signupBtn', 'click', handleSignup);
+            addListener('logoutBtn', 'click', handleLogout);
+            
+            const showSignupLink = document.getElementById('showSignupLink');
+            if (showSignupLink) {
+                showSignupLink.addEventListener('click', (e) => { 
+                    console.log('Signup link clicked');
+                    e.preventDefault(); 
+                    showSignup(); 
+                });
+                console.log('Added listener to showSignupLink');
             }
             
-            document.getElementById('loginBtn').addEventListener('click', handleLogin);
-            document.getElementById('signupBtn').addEventListener('click', handleSignup);
-            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-            document.getElementById('showSignupLink').addEventListener('click', (e) => { e.preventDefault(); showSignup(); });
-            document.getElementById('showLoginLink').addEventListener('click', (e) => { e.preventDefault(); showLogin(); });
-            document.getElementById('historyBtn').addEventListener('click', showHistory);
-            document.getElementById('settingsBtn').addEventListener('click', showSettings);
-            document.getElementById('backFromHistoryBtn').addEventListener('click', showHome);
-            document.getElementById('backFromSettingsBtn').addEventListener('click', showHome);
-            document.getElementById('addExerciseBtn').addEventListener('click', addCustomExercise);
-            document.getElementById('cancelWorkoutBtn').addEventListener('click', cancelWorkout);
-            document.getElementById('finishWorkoutBtn').addEventListener('click', finishWorkout);
-            document.getElementById('timerDisplay').addEventListener('click', toggleTimer);
-            document.getElementById('resetTimerBtn').addEventListener('click', resetTimer);
-            document.getElementById('workoutDate').addEventListener('change', updateWorkoutDateTime);
-            document.getElementById('workoutTime').addEventListener('change', updateWorkoutDateTime);
-            document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
+            const showLoginLink = document.getElementById('showLoginLink');
+            if (showLoginLink) {
+                showLoginLink.addEventListener('click', (e) => { 
+                    e.preventDefault(); 
+                    showLogin(); 
+                });
+                console.log('Added listener to showLoginLink');
+            }
             
-            console.log('All event listeners attached');
+            // App listeners
+            addListener('historyBtn', 'click', showHistory);
+            addListener('settingsBtn', 'click', showSettings);
+            addListener('backFromHistoryBtn', 'click', showHome);
+            addListener('backFromSettingsBtn', 'click', showHome);
+            addListener('addExerciseBtn', 'click', addCustomExercise);
+            addListener('cancelWorkoutBtn', 'click', cancelWorkout);
+            addListener('finishWorkoutBtn', 'click', finishWorkout);
+            addListener('timerDisplay', 'click', toggleTimer);
+            addListener('resetTimerBtn', 'click', resetTimer);
+            addListener('workoutDate', 'change', updateWorkoutDateTime);
+            addListener('workoutTime', 'change', updateWorkoutDateTime);
+            addListener('addCategoryBtn', 'click', addCategory);
+            
+            console.log('All event listeners setup complete');
         }
         
         async function loadUserData() {
@@ -459,12 +481,14 @@
         
         // Auth functions
         function showLogin() {
+            console.log('showLogin called');
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('signupForm').classList.add('hidden');
             clearAuthError();
         }
         
         function showSignup() {
+            console.log('showSignup called');
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('signupForm').classList.remove('hidden');
             clearAuthError();
