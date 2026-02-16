@@ -383,7 +383,7 @@
             <div class="mb-2">
                 <label class="text-sm font-bold">Add Exercise</label>
                 <div style="margin-top: 0.5rem; position: relative;">
-                    <input type="text" id="customExercise" placeholder="Exercise name..." autocomplete="off">
+                    <input type="text" id="customExercise" name="exercise-name-input" placeholder="Exercise name..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
                     <div id="exerciseAutocomplete" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
                 </div>
                 <button class="btn btn-primary" id="addExerciseBtn" style="width: 100%; margin-top: 0.5rem;">Add Exercise</button>
@@ -1053,24 +1053,25 @@
                                 <button onclick="toggleTagsDropdown(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
                                     ${tagPills || 'Tags'} ${tagPills ? '' : '▼'}
                                 </button>
-                                <div id="tags-dropdown-${ex.id}" class="hidden" style="position: absolute; top: 100%; left: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; padding: 0.75rem; min-width: 200px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+                                <div id="tags-dropdown-${ex.id}" class="hidden" style="position: absolute; top: 100%; left: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; padding: 0.75rem; min-width: 220px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
                                     <p class="text-xs font-bold mb-2">Select Tags:</p>
-                                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem;">
+                                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
                                         ${['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].map(tag => {
                                             const isSelected = (ex.tags || []).includes(tag);
                                             return `
-                                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; font-size: 0.875rem;">
-                                                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleExerciseTag(${ex.id}, '${tag}')" style="width: auto;">
+                                                <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}" onmouseover="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.1)'" onmouseout="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.05)'">
                                                     ${tag}
-                                                </label>
+                                                </div>
                                             `;
                                         }).join('')}
                                         ${(ex.tags || []).filter(tag => !['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].includes(tag)).map(tag => {
                                             return `
-                                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; font-size: 0.875rem;">
-                                                    <input type="checkbox" checked onchange="toggleExerciseTag(${ex.id}, '${tag}')" style="width: auto;">
-                                                    ${tag}
-                                                </label>
+                                                <div style="position: relative; display: flex; align-items: center;">
+                                                    <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">
+                                                        ${tag}
+                                                    </div>
+                                                    <button onclick="event.stopPropagation(); removeCustomTagFromExercise(${ex.id}, '${tag}')" style="position: absolute; right: 0.5rem; background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.125rem 0.375rem; font-size: 0.75rem; cursor: pointer;">Delete</button>
+                                                </div>
                                             `;
                                         }).join('')}
                                     </div>
@@ -1305,7 +1306,34 @@
                 exercise.tags.push(tag);
             }
             
+            // Keep dropdown open
+            const dropdownWasOpen = !document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.contains('hidden');
             renderExercises();
+            if (dropdownWasOpen) {
+                setTimeout(() => {
+                    document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.remove('hidden');
+                }, 10);
+            }
+            saveDraft();
+        };
+        
+        window.removeCustomTagFromExercise = function(exerciseId, tag) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            
+            const index = exercise.tags.indexOf(tag);
+            if (index > -1) {
+                exercise.tags.splice(index, 1);
+            }
+            
+            // Keep dropdown open
+            const dropdownWasOpen = !document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.contains('hidden');
+            renderExercises();
+            if (dropdownWasOpen) {
+                setTimeout(() => {
+                    document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.remove('hidden');
+                }, 10);
+            }
             saveDraft();
         };
         
@@ -1679,10 +1707,16 @@
                     workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative; cursor: pointer; transition: all 0.2s;';
                     workoutDiv.onmouseover = () => workoutDiv.style.borderColor = 'rgba(0, 245, 255, 0.4)';
                     workoutDiv.onmouseout = () => workoutDiv.style.borderColor = '#e2e8f0';
-                    workoutDiv.onclick = () => editWorkout('${workout.id}');
+                    workoutDiv.onclick = () => window.editWorkout('${workout.id}');
                     workoutDiv.innerHTML = `
-                        <button onclick="event.stopPropagation(); deleteWorkout('${workout.id}')" style="position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.25rem; padding: 0.25rem 0.5rem;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
-                        <div class="flex mb-2" style="justify-content: space-between; padding-right: 2rem;">
+                        <div style="position: absolute; top: 0.5rem; right: 0.5rem;">
+                            <button onclick="event.stopPropagation(); toggleWorkoutMenu('${workout.id}')" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #94a3b8; cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">...</button>
+                            <div id="workout-menu-${workout.id}" class="hidden" style="position: absolute; top: 100%; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; min-width: 120px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+                                <button onclick="event.stopPropagation(); window.editWorkout('${workout.id}')" style="width: 100%; text-align: left; padding: 0.5rem 0.75rem; background: none; border: none; color: rgba(224, 224, 224, 0.8); cursor: pointer; font-size: 0.875rem; border-bottom: 1px solid rgba(255, 255, 255, 0.1);" onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" onmouseout="this.style.background='none'">Edit</button>
+                                <button onclick="event.stopPropagation(); deleteWorkout('${workout.id}')" style="width: 100%; text-align: left; padding: 0.5rem 0.75rem; background: none; border: none; color: rgba(239, 68, 68, 0.8); cursor: pointer; font-size: 0.875rem;" onmouseover="this.style.background='rgba(239, 68, 68, 0.1)'" onmouseout="this.style.background='none'">Delete</button>
+                            </div>
+                        </div>
+                        <div class="flex mb-2" style="justify-content: space-between; padding-right: 3rem;">
                             <div class="flex gap-2" style="align-items: center;">
                                 <span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'};"></span>
                                 <div>
@@ -1693,7 +1727,6 @@
                             <div class="text-sm text-gray" style="text-align: right;">
                                 <div>${duration} min</div>
                                 <div>${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</div>
-                                <div style="font-size: 0.75rem; color: rgba(0, 245, 255, 0.7); margin-top: 0.25rem;">Click to edit</div>
                             </div>
                         </div>
                         <div class="text-sm">
@@ -1899,6 +1932,13 @@
             renderExercises();
             showWorkoutScreen();
             setupExerciseAutocomplete();
+        };
+        
+        window.toggleWorkoutMenu = function(workoutId) {
+            const menu = document.getElementById(`workout-menu-${workoutId}`);
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
         };
         
         window.deleteWorkout = async function(workoutId) {
