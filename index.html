@@ -1035,61 +1035,101 @@
                     `;
                 });
                 
+                // Generate tag pills
+                const tagPills = (ex.tags || []).map(tag => 
+                    `<span style="background: rgba(0, 245, 255, 0.2); color: #00f5ff; padding: 0.125rem 0.5rem; border-radius: 0.75rem; font-size: 0.75rem; margin-right: 0.25rem;">${tag}</span>`
+                ).join('');
+                
+                const isCollapsed = ex.collapsed || false;
+                
                 div.innerHTML = `
-                    <div class="flex mb-2" style="justify-content: space-between;">
-                        <h3 class="font-bold">${ex.name}</h3>
+                    <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
+                        <div class="flex gap-2" style="align-items: center; flex: 1;">
+                            <button onclick="toggleExerciseCollapse(${ex.id})" style="background: none; border: none; color: rgba(224, 224, 224, 0.6); cursor: pointer; font-size: 1rem; padding: 0.25rem;">
+                                ${isCollapsed ? '▶' : '▼'}
+                            </button>
+                            <h3 class="font-bold" style="flex-shrink: 0;">${ex.name}</h3>
+                            <div style="position: relative; flex-shrink: 0;">
+                                <button onclick="toggleTagsDropdown(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
+                                    ${tagPills || 'Tags'} ${tagPills ? '' : '▼'}
+                                </button>
+                                <div id="tags-dropdown-${ex.id}" class="hidden" style="position: absolute; top: 100%; left: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; padding: 0.75rem; min-width: 200px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
+                                    <p class="text-xs font-bold mb-2">Select Tags:</p>
+                                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem;">
+                                        ${['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].map(tag => {
+                                            const isSelected = (ex.tags || []).includes(tag);
+                                            return `
+                                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; font-size: 0.875rem;">
+                                                    <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleExerciseTag(${ex.id}, '${tag}')" style="width: auto;">
+                                                    ${tag}
+                                                </label>
+                                            `;
+                                        }).join('')}
+                                        ${(ex.tags || []).filter(tag => !['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].includes(tag)).map(tag => {
+                                            return `
+                                                <label style="display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem; cursor: pointer; font-size: 0.875rem;">
+                                                    <input type="checkbox" checked onchange="toggleExerciseTag(${ex.id}, '${tag}')" style="width: auto;">
+                                                    ${tag}
+                                                </label>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="custom-tag-${ex.id}" placeholder="Custom tag..." style="flex: 1; font-size: 0.875rem; padding: 0.375rem;">
+                                        <button class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="addCustomTag(${ex.id})">Add</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="flex gap-2">
                             <button style="background: none; border: none; color: rgba(0, 245, 255, 0.7); cursor: pointer; font-size: 1rem; padding: 0.25rem 0.5rem;" onclick="showMetricsEditor(${ex.id})" title="Edit Metrics">⚙️</button>
                             <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
                         </div>
                     </div>
                     
-                    <div id="metrics-editor-${ex.id}" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 245, 255, 0.2);">
-                        <p class="text-sm font-bold mb-2">Select Metrics to Track:</p>
-                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
-                            ${DEFAULT_METRICS.concat(customMetrics).map(metric => {
-                                const checked = ex.metrics.includes(metric) ? 'checked' : '';
-                                const label = metric.charAt(0).toUpperCase() + metric.slice(1);
-                                const isCustom = customMetrics.includes(metric);
-                                const deleteBtn = isCustom ? `<button onclick="deleteCustomMetric('${metric}', ${ex.id}); event.stopPropagation();" style="background: none; border: none; color: rgba(239, 68, 68, 0.7); cursor: pointer; font-size: 0.875rem; padding: 0 0.25rem; margin-left: auto;" title="Delete this metric">×</button>` : '';
-                                return `
-                                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                        <input type="checkbox" ${checked} onchange="toggleMetric(${ex.id}, '${metric}')" style="width: auto;">
-                                        <span class="text-sm">${label}</span>
-                                        ${deleteBtn}
-                                    </label>
-                                `;
-                            }).join('')}
+                    <div id="exercise-content-${ex.id}" ${isCollapsed ? 'class="hidden"' : ''}>
+                        <div id="metrics-editor-${ex.id}" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; border: 1px solid rgba(0, 245, 255, 0.2);">
+                            <p class="text-sm font-bold mb-2">Select Metrics to Track:</p>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem;">
+                                ${DEFAULT_METRICS.concat(customMetrics).map(metric => {
+                                    const checked = ex.metrics.includes(metric) ? 'checked' : '';
+                                    const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                                    const isCustom = customMetrics.includes(metric);
+                                    const deleteBtn = isCustom ? `<button onclick="deleteCustomMetric('${metric}', ${ex.id}); event.stopPropagation();" style="background: none; border: none; color: rgba(239, 68, 68, 0.7); cursor: pointer; font-size: 0.875rem; padding: 0 0.25rem; margin-left: auto;" title="Delete this metric">×</button>` : '';
+                                    return `
+                                        <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                            <input type="checkbox" ${checked} onchange="toggleMetric(${ex.id}, '${metric}')" style="width: auto;">
+                                            <span class="text-sm">${label}</span>
+                                            ${deleteBtn}
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                            <div class="flex gap-2 mb-2">
+                                <input type="text" id="custom-metric-${ex.id}" placeholder="Add custom metric..." style="flex: 1;">
+                                <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="addCustomMetric(${ex.id})">+ Add</button>
+                            </div>
+                            <button class="btn btn-secondary" style="width: 100%;" onclick="closeMetricsEditor(${ex.id})">Done</button>
                         </div>
-                        <div class="flex gap-2 mb-2">
-                            <input type="text" id="custom-metric-${ex.id}" placeholder="Add custom metric..." style="flex: 1;">
-                            <button class="btn btn-primary" style="padding: 0.5rem 1rem;" onclick="addCustomMetric(${ex.id})">+ Add</button>
+                        
+                        ${setsHTML}
+                        
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
+                            + Add Set
+                        </button>
+                        
+                        <!-- Last Workout Info (moved below Add Set button) -->
+                        <div id="last-workout-${ex.id}" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.2);">
+                            <p class="text-xs font-bold mb-1">Last time:</p>
+                            <p id="last-workout-details-${ex.id}" class="text-xs text-gray"></p>
                         </div>
-                        <button class="btn btn-secondary" style="width: 100%;" onclick="closeMetricsEditor(${ex.id})">Done</button>
-                    </div>
-                    
-                    ${setsHTML}
-                    
-                    <!-- Exercise Notes -->
-                    <div style="margin-top: 0.5rem;">
-                        <label class="text-xs text-gray">Exercise Notes (optional)</label>
-                        <textarea id="exercise-notes-${ex.id}" rows="2" placeholder="How did this feel? Any form notes..." style="margin-top: 0.25rem;" onchange="updateExerciseNotes(${ex.id}, this.value)">${ex.notes || ''}</textarea>
-                    </div>
-                    
-                    <!-- Muscle Group Tags -->
-                    <div style="margin-top: 0.5rem;">
-                        <label class="text-xs text-gray">Muscle Groups (optional)</label>
-                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem;">
-                            ${['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].map(tag => {
-                                const isSelected = (ex.tags || []).includes(tag);
-                                return `<button onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; cursor: pointer; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6);'}">${tag}</button>`;
-                            }).join('')}
+                        
+                        <!-- Exercise Notes -->
+                        <div style="margin-top: 0.5rem;">
+                            <label class="text-xs text-gray">Exercise Notes (optional)</label>
+                            <textarea id="exercise-notes-${ex.id}" rows="2" placeholder="How did this feel? Any form notes..." style="margin-top: 0.25rem;" onchange="updateExerciseNotes(${ex.id}, this.value)">${ex.notes || ''}</textarea>
                         </div>
                     </div>
-                    
-                    <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
-                        + Add Set
-                    </button>
                 `;
                 container.appendChild(div);
             });
@@ -1269,6 +1309,66 @@
             saveDraft();
         };
         
+        window.toggleExerciseCollapse = function(exerciseId) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise) {
+                exercise.collapsed = !exercise.collapsed;
+                renderExercises();
+            }
+        };
+        
+        window.toggleTagsDropdown = function(exerciseId) {
+            const dropdown = document.getElementById(`tags-dropdown-${exerciseId}`);
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+            
+            // Close other dropdowns
+            exercises.forEach(ex => {
+                if (ex.id !== exerciseId) {
+                    const other = document.getElementById(`tags-dropdown-${ex.id}`);
+                    if (other) other.classList.add('hidden');
+                }
+            });
+        };
+        
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('[onclick*="toggleTagsDropdown"]') && !e.target.closest('[id^="tags-dropdown-"]')) {
+                exercises.forEach(ex => {
+                    const dropdown = document.getElementById(`tags-dropdown-${ex.id}`);
+                    if (dropdown) dropdown.classList.add('hidden');
+                });
+            }
+        });
+        
+        window.addCustomTag = function(exerciseId) {
+            const input = document.getElementById(`custom-tag-${exerciseId}`);
+            const tag = input.value.trim();
+            
+            if (!tag) return;
+            
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            
+            if (!exercise.tags) exercise.tags = [];
+            
+            // Add tag if not already present
+            if (!exercise.tags.includes(tag)) {
+                exercise.tags.push(tag);
+            }
+            
+            input.value = '';
+            renderExercises();
+            saveDraft();
+            
+            // Reopen dropdown
+            setTimeout(() => {
+                const dropdown = document.getElementById(`tags-dropdown-${exerciseId}`);
+                if (dropdown) dropdown.classList.remove('hidden');
+            }, 50);
+        };
+        
         // Exercise Autocomplete
         async function setupExerciseAutocomplete() {
             const input = document.getElementById('customExercise');
@@ -1339,10 +1439,11 @@
             input.value = exerciseName;
             dropdown.classList.add('hidden');
             
-            // Show last workout info
+            // Show last workout info in the top section
             const exercise = exerciseLibrary.find(ex => ex.id === libraryId);
             if (exercise && exercise.last_metrics) {
                 const metrics = exercise.last_metrics;
+                const lastDate = new Date(exercise.last_performed);
                 let detailsText = '';
                 
                 if (metrics.sets && metrics.sets.length > 0) {
@@ -1356,11 +1457,13 @@
                     if (firstSet.time) parts.push(`${firstSet.time} min`);
                     if (firstSet.distance) parts.push(`${firstSet.distance} mi`);
                     
-                    detailsText = `${setCount} sets × ${parts.join(' × ')}`;
+                    detailsText = `(${lastDate.toLocaleDateString()}) ${setCount} sets × ${parts.join(' × ')}`;
+                    if (exercise.last_notes) {
+                        detailsText += ` - "${exercise.last_notes}"`;
+                    }
                 }
                 
                 lastWorkoutDetails.textContent = detailsText || 'No previous data';
-                lastWorkoutNotes.textContent = exercise.last_notes ? `"${exercise.last_notes}"` : '';
                 lastWorkoutInfo.classList.remove('hidden');
             } else {
                 lastWorkoutInfo.classList.add('hidden');
@@ -1412,6 +1515,16 @@
             if (exercises.length === 0) {
                 alert('Add at least one exercise before finishing');
                 return;
+            }
+            
+            // If editing an existing workout, delete it first
+            if (currentWorkout.editingId) {
+                await supabaseClient
+                    .from('workouts')
+                    .delete()
+                    .eq('id', currentWorkout.editingId);
+                
+                delete currentWorkout.editingId;
             }
             
             const now = new Date();
@@ -1563,9 +1676,12 @@
                     const duration = Math.floor((end - start) / 60000);
                     
                     const workoutDiv = document.createElement('div');
-                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative;';
+                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative; cursor: pointer; transition: all 0.2s;';
+                    workoutDiv.onmouseover = () => workoutDiv.style.borderColor = 'rgba(0, 245, 255, 0.4)';
+                    workoutDiv.onmouseout = () => workoutDiv.style.borderColor = '#e2e8f0';
+                    workoutDiv.onclick = () => editWorkout('${workout.id}');
                     workoutDiv.innerHTML = `
-                        <button onclick="deleteWorkout('${workout.id}')" style="position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.25rem; padding: 0.25rem 0.5rem;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
+                        <button onclick="event.stopPropagation(); deleteWorkout('${workout.id}')" style="position: absolute; top: 0.5rem; right: 0.5rem; background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 1.25rem; padding: 0.25rem 0.5rem;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">×</button>
                         <div class="flex mb-2" style="justify-content: space-between; padding-right: 2rem;">
                             <div class="flex gap-2" style="align-items: center;">
                                 <span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'};"></span>
@@ -1577,6 +1693,7 @@
                             <div class="text-sm text-gray" style="text-align: right;">
                                 <div>${duration} min</div>
                                 <div>${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</div>
+                                <div style="font-size: 0.75rem; color: rgba(0, 245, 255, 0.7); margin-top: 0.25rem;">Click to edit</div>
                             </div>
                         </div>
                         <div class="text-sm">
@@ -1704,6 +1821,84 @@
                 viewingYear++;
             }
             showHistory(null, true); // Keep the month we just set
+        };
+        
+        // Edit Past Workout
+        window.editWorkout = async function(workoutId) {
+            // Load the full workout with exercises and sets
+            const { data: workout } = await supabaseClient
+                .from('workouts')
+                .select(`
+                    *,
+                    exercises (
+                        *,
+                        sets (*)
+                    )
+                `)
+                .eq('id', workoutId)
+                .single();
+            
+            if (!workout) {
+                alert('Could not load workout');
+                return;
+            }
+            
+            // Find the category
+            const category = workoutCategories.find(c => c.name === workout.type);
+            if (!category) {
+                alert('Workout category not found');
+                return;
+            }
+            
+            // Set up editing mode
+            currentWorkout = category;
+            currentWorkout.editingId = workoutId; // Flag that we're editing
+            workoutStartTime = new Date(workout.start_time);
+            
+            // Convert exercises from database format to app format
+            exercises = workout.exercises.map(ex => {
+                // Get all unique metric fields from sets
+                const metricsSet = new Set();
+                ex.sets.forEach(set => {
+                    Object.keys(set).forEach(key => {
+                        if (!['id', 'exercise_id', 'set_order', 'created_at'].includes(key) && set[key] !== null) {
+                            metricsSet.add(key);
+                        }
+                    });
+                });
+                
+                return {
+                    id: ex.id,
+                    name: ex.name,
+                    metrics: Array.from(metricsSet),
+                    sets: ex.sets.map(s => ({
+                        reps: s.reps || '',
+                        weight: s.weight || '',
+                        time: s.time || '',
+                        distance: s.distance || '',
+                        speed: s.speed || '',
+                        incline: s.incline || '',
+                        notes: s.notes || ''
+                    })),
+                    notes: '', // We'll need to store this separately if we want exercise notes in edit
+                    tags: [] // Same with tags
+                };
+            });
+            
+            // Populate form fields
+            const startDate = new Date(workout.start_time);
+            document.getElementById('workoutDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('workoutTime').value = startDate.toTimeString().slice(0, 5);
+            document.getElementById('workoutNotes').value = workout.notes || '';
+            
+            document.getElementById('workoutColorDot').style.background = category.color;
+            document.getElementById('workoutTitle').textContent = `Edit: ${category.name}`;
+            
+            updateWorkoutInfo();
+            renderPreviousWorkouts();
+            renderExercises();
+            showWorkoutScreen();
+            setupExerciseAutocomplete();
         };
         
         window.deleteWorkout = async function(workoutId) {
