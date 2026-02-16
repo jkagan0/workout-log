@@ -985,13 +985,17 @@
             
             const savedMetrics = exercisePreferences[name] || defaultMetrics;
             
+            // Load tags from exercise library if available
+            const libraryExercise = exerciseLibrary.find(ex => ex.exercise_name.toLowerCase() === name.toLowerCase());
+            const savedTags = libraryExercise && libraryExercise.tags ? libraryExercise.tags : [];
+            
             const exercise = {
                 id: Date.now(),
                 name: name,
                 metrics: savedMetrics,
                 sets: [createEmptySet(savedMetrics)],
                 notes: '',
-                tags: []
+                tags: savedTags
             };
             exercises.push(exercise);
             renderExercises();
@@ -1049,6 +1053,8 @@
                                 ${isCollapsed ? '▶' : '▼'}
                             </button>
                             <h3 class="font-bold" style="flex-shrink: 0;">${ex.name}</h3>
+                            
+                            <!-- Tags button -->
                             <div style="position: relative; flex-shrink: 0;">
                                 <button onclick="toggleTagsDropdown(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
                                     ${tagPills || 'Tags'} ${tagPills ? '' : '▼'}
@@ -1066,15 +1072,11 @@
                                         }).join('')}
                                         ${(ex.tags || []).filter(tag => !['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].includes(tag)).map(tag => {
                                             return `
-                                                <div id="tag-${ex.id}-${tag.replace(/\s/g, '-')}" style="position: relative; overflow: hidden; border-radius: 0.375rem;">
-                                                    <div class="tag-swipeable" data-exercise="${ex.id}" data-tag="${tag}" style="display: flex; transition: transform 0.3s;">
-                                                        <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="flex: 1; padding: 0.5rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">
-                                                            ${tag}
-                                                        </div>
-                                                        <div style="background: #ef4444; color: white; padding: 0.5rem 1rem; display: flex; align-items: center; font-size: 0.875rem; font-weight: 600;">
-                                                            Delete
-                                                        </div>
+                                                <div style="display: flex; gap: 0.25rem; align-items: center;">
+                                                    <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">
+                                                        ${tag}
                                                     </div>
+                                                    <button onclick="event.stopPropagation(); removeCustomTagFromExercise(${ex.id}, '${tag}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; flex-shrink: 0;">×</button>
                                                 </div>
                                             `;
                                         }).join('')}
@@ -1085,9 +1087,15 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Metrics button -->
+                            <div style="position: relative; flex-shrink: 0;">
+                                <button onclick="showMetricsEditor(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                                    Metrics ▼
+                                </button>
+                            </div>
                         </div>
                         <div class="flex gap-2">
-                            <button style="background: none; border: none; color: rgba(0, 245, 255, 0.7); cursor: pointer; font-size: 1rem; padding: 0.25rem 0.5rem;" onclick="showMetricsEditor(${ex.id})" title="Edit Metrics">⚙️</button>
                             <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
                         </div>
                     </div>
@@ -1109,15 +1117,11 @@
                                     const isSelected = ex.metrics.includes(metric);
                                     const label = metric.charAt(0).toUpperCase() + metric.slice(1);
                                     return `
-                                        <div id="metric-${ex.id}-${metric.replace(/\s/g, '-')}" style="position: relative; overflow: hidden; border-radius: 0.375rem;">
-                                            <div class="metric-swipeable" data-exercise="${ex.id}" data-metric="${metric}" style="display: flex; transition: transform 0.3s;">
-                                                <div onclick="toggleMetric(${ex.id}, '${metric}')" style="flex: 1; padding: 0.5rem; cursor: pointer; font-size: 0.875rem; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}">
-                                                    ${label}
-                                                </div>
-                                                <div style="background: #ef4444; color: white; padding: 0.5rem 1rem; display: flex; align-items: center; font-size: 0.875rem; font-weight: 600;">
-                                                    Delete
-                                                </div>
+                                        <div style="display: flex; gap: 0.25rem; align-items: center;">
+                                            <div onclick="toggleMetric(${ex.id}, '${metric}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}">
+                                                ${label}
                                             </div>
+                                            <button onclick="event.stopPropagation(); deleteCustomMetric('${metric}', ${ex.id})" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; flex-shrink: 0;">×</button>
                                         </div>
                                     `;
                                 }).join('')}
@@ -1149,110 +1153,6 @@
                     </div>
                 `;
                 container.appendChild(div);
-            });
-            
-            // Setup swipe-to-delete for tags
-            setupSwipeToDelete('.tag-swipeable', (element) => {
-                const exerciseId = parseInt(element.dataset.exercise);
-                const tag = element.dataset.tag;
-                removeCustomTagFromExercise(exerciseId, tag);
-            });
-            
-            // Setup swipe-to-delete for metrics
-            setupSwipeToDelete('.metric-swipeable', (element) => {
-                const exerciseId = parseInt(element.dataset.exercise);
-                const metric = element.dataset.metric;
-                deleteCustomMetric(metric, exerciseId);
-            });
-        }
-        
-        // Swipe-to-delete functionality
-        function setupSwipeToDelete(selector, deleteCallback) {
-            const elements = document.querySelectorAll(selector);
-            
-            elements.forEach(element => {
-                let startX = 0;
-                let currentX = 0;
-                let isSwiping = false;
-                
-                element.addEventListener('touchstart', (e) => {
-                    startX = e.touches[0].clientX;
-                    isSwiping = true;
-                });
-                
-                element.addEventListener('touchmove', (e) => {
-                    if (!isSwiping) return;
-                    currentX = e.touches[0].clientX;
-                    const diff = startX - currentX;
-                    
-                    if (diff > 0 && diff < 100) {
-                        element.style.transform = `translateX(-${diff}px)`;
-                    }
-                });
-                
-                element.addEventListener('touchend', () => {
-                    const diff = startX - currentX;
-                    
-                    if (diff > 60) {
-                        // Swipe complete - show delete
-                        element.style.transform = 'translateX(-80px)';
-                        
-                        // Click on delete area triggers delete
-                        setTimeout(() => {
-                            const deleteArea = element.querySelector('[style*="background: #ef4444"]');
-                            if (deleteArea) {
-                                deleteArea.addEventListener('click', () => {
-                                    deleteCallback(element);
-                                });
-                            }
-                        }, 100);
-                    } else {
-                        // Swipe cancelled
-                        element.style.transform = 'translateX(0)';
-                    }
-                    
-                    isSwiping = false;
-                });
-                
-                // Also support mouse drag for desktop
-                let isMouseDown = false;
-                
-                element.addEventListener('mousedown', (e) => {
-                    startX = e.clientX;
-                    isMouseDown = true;
-                    e.preventDefault();
-                });
-                
-                element.addEventListener('mousemove', (e) => {
-                    if (!isMouseDown) return;
-                    currentX = e.clientX;
-                    const diff = startX - currentX;
-                    
-                    if (diff > 0 && diff < 100) {
-                        element.style.transform = `translateX(-${diff}px)`;
-                    }
-                });
-                
-                element.addEventListener('mouseup', () => {
-                    const diff = startX - currentX;
-                    
-                    if (diff > 60) {
-                        element.style.transform = 'translateX(-80px)';
-                        
-                        setTimeout(() => {
-                            const deleteArea = element.querySelector('[style*="background: #ef4444"]');
-                            if (deleteArea) {
-                                deleteArea.addEventListener('click', () => {
-                                    deleteCallback(element);
-                                });
-                            }
-                        }, 100);
-                    } else {
-                        element.style.transform = 'translateX(0)';
-                    }
-                    
-                    isMouseDown = false;
-                });
             });
         }
         
@@ -1541,6 +1441,9 @@
             input.addEventListener('input', function() {
                 const value = this.value.trim().toLowerCase();
                 
+                console.log('Autocomplete input:', value);
+                console.log('Exercise library:', exerciseLibrary);
+                
                 if (!value) {
                     dropdown.classList.add('hidden');
                     lastWorkoutInfo.classList.add('hidden');
@@ -1552,6 +1455,8 @@
                 const matches = exerciseLibrary
                     .filter(ex => ex.exercise_name.toLowerCase().includes(value))
                     .slice(0, 8);
+                
+                console.log('Matches found:', matches);
                 
                 if (matches.length > 0) {
                     dropdown.innerHTML = matches.map(ex => `
