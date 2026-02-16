@@ -382,10 +382,18 @@
         <div class="exercise-box mb-4">
             <div class="mb-2">
                 <label class="text-sm font-bold">Add Exercise</label>
-                <div class="flex gap-2" style="margin-top: 0.5rem;">
-                    <input type="text" id="customExercise" placeholder="Exercise name...">
-                    <button class="btn btn-primary" id="addExerciseBtn">Add</button>
+                <div style="margin-top: 0.5rem; position: relative;">
+                    <input type="text" id="customExercise" placeholder="Exercise name..." autocomplete="off">
+                    <div id="exerciseAutocomplete" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
                 </div>
+                <button class="btn btn-primary" id="addExerciseBtn" style="width: 100%; margin-top: 0.5rem;">Add Exercise</button>
+            </div>
+            
+            <!-- Last workout info (shows when exercise is selected) -->
+            <div id="lastWorkoutInfo" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.2);">
+                <p class="text-sm font-bold mb-1">Last time:</p>
+                <p id="lastWorkoutDetails" class="text-sm text-gray"></p>
+                <p id="lastWorkoutNotes" class="text-sm text-gray" style="font-style: italic; margin-top: 0.25rem;"></p>
             </div>
         </div>
         
@@ -464,6 +472,7 @@
         let viewingYear = new Date().getFullYear();
         let customMetrics = []; // User's custom metrics library
         let exercisePreferences = {}; // Per-exercise metric preferences
+        let exerciseLibrary = []; // User's exercise history
         
         // Default available metrics
         const DEFAULT_METRICS = ['reps', 'weight', 'time', 'distance', 'speed', 'incline'];
@@ -849,6 +858,9 @@
             renderExercises();
             showWorkoutScreen();
             
+            // Setup exercise autocomplete
+            setupExerciseAutocomplete();
+            
             // Save initial draft
             saveDraft();
         }
@@ -977,7 +989,9 @@
                 id: Date.now(),
                 name: name,
                 metrics: savedMetrics,
-                sets: [createEmptySet(savedMetrics)]
+                sets: [createEmptySet(savedMetrics)],
+                notes: '',
+                tags: []
             };
             exercises.push(exercise);
             renderExercises();
@@ -1055,6 +1069,24 @@
                     </div>
                     
                     ${setsHTML}
+                    
+                    <!-- Exercise Notes -->
+                    <div style="margin-top: 0.5rem;">
+                        <label class="text-xs text-gray">Exercise Notes (optional)</label>
+                        <textarea id="exercise-notes-${ex.id}" rows="2" placeholder="How did this feel? Any form notes..." style="margin-top: 0.25rem;" onchange="updateExerciseNotes(${ex.id}, this.value)">${ex.notes || ''}</textarea>
+                    </div>
+                    
+                    <!-- Muscle Group Tags -->
+                    <div style="margin-top: 0.5rem;">
+                        <label class="text-xs text-gray">Muscle Groups (optional)</label>
+                        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.25rem;">
+                            ${['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].map(tag => {
+                                const isSelected = (ex.tags || []).includes(tag);
+                                return `<button onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; cursor: pointer; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6);'}">${tag}</button>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                    
                     <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
                         + Add Set
                     </button>
@@ -1211,6 +1243,130 @@
             }
         };
         
+        // Exercise Notes and Tags
+        window.updateExerciseNotes = function(exerciseId, notes) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise) {
+                exercise.notes = notes;
+                saveDraft();
+            }
+        };
+        
+        window.toggleExerciseTag = function(exerciseId, tag) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            
+            if (!exercise.tags) exercise.tags = [];
+            
+            const index = exercise.tags.indexOf(tag);
+            if (index > -1) {
+                exercise.tags.splice(index, 1);
+            } else {
+                exercise.tags.push(tag);
+            }
+            
+            renderExercises();
+            saveDraft();
+        };
+        
+        // Exercise Autocomplete
+        async function setupExerciseAutocomplete() {
+            const input = document.getElementById('customExercise');
+            const dropdown = document.getElementById('exerciseAutocomplete');
+            const lastWorkoutInfo = document.getElementById('lastWorkoutInfo');
+            
+            if (!input || !dropdown) return;
+            
+            // Load exercise library from Supabase
+            const { data } = await supabaseClient
+                .from('exercise_library')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('last_performed', { ascending: false });
+            
+            if (data) {
+                exerciseLibrary = data;
+            }
+            
+            let selectedExercise = null;
+            
+            input.addEventListener('input', function() {
+                const value = this.value.trim().toLowerCase();
+                
+                if (!value) {
+                    dropdown.classList.add('hidden');
+                    lastWorkoutInfo.classList.add('hidden');
+                    selectedExercise = null;
+                    return;
+                }
+                
+                // Filter exercises
+                const matches = exerciseLibrary
+                    .filter(ex => ex.exercise_name.toLowerCase().includes(value))
+                    .slice(0, 8);
+                
+                if (matches.length > 0) {
+                    dropdown.innerHTML = matches.map(ex => `
+                        <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);" 
+                             onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" 
+                             onmouseout="this.style.background='transparent'"
+                             onclick="selectExercise('${ex.exercise_name}', ${ex.id})">
+                            <div class="text-sm font-bold">${ex.exercise_name}</div>
+                            ${ex.tags && ex.tags.length > 0 ? `<div class="text-xs text-gray">${ex.tags.join(', ')}</div>` : ''}
+                        </div>
+                    `).join('');
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            });
+            
+            // Click outside to close
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+        
+        window.selectExercise = async function(exerciseName, libraryId) {
+            const input = document.getElementById('customExercise');
+            const dropdown = document.getElementById('exerciseAutocomplete');
+            const lastWorkoutInfo = document.getElementById('lastWorkoutInfo');
+            const lastWorkoutDetails = document.getElementById('lastWorkoutDetails');
+            const lastWorkoutNotes = document.getElementById('lastWorkoutNotes');
+            
+            input.value = exerciseName;
+            dropdown.classList.add('hidden');
+            
+            // Show last workout info
+            const exercise = exerciseLibrary.find(ex => ex.id === libraryId);
+            if (exercise && exercise.last_metrics) {
+                const metrics = exercise.last_metrics;
+                let detailsText = '';
+                
+                if (metrics.sets && metrics.sets.length > 0) {
+                    const firstSet = metrics.sets[0];
+                    const setCount = metrics.sets.length;
+                    
+                    // Build description from first set
+                    const parts = [];
+                    if (firstSet.reps) parts.push(`${firstSet.reps} reps`);
+                    if (firstSet.weight) parts.push(`${firstSet.weight} lbs`);
+                    if (firstSet.time) parts.push(`${firstSet.time} min`);
+                    if (firstSet.distance) parts.push(`${firstSet.distance} mi`);
+                    
+                    detailsText = `${setCount} sets × ${parts.join(' × ')}`;
+                }
+                
+                lastWorkoutDetails.textContent = detailsText || 'No previous data';
+                lastWorkoutNotes.textContent = exercise.last_notes ? `"${exercise.last_notes}"` : '';
+                lastWorkoutInfo.classList.remove('hidden');
+            } else {
+                lastWorkoutInfo.classList.add('hidden');
+            }
+        };
+        
         // Timer
         function toggleTimer() {
             if (timerInterval) {
@@ -1321,6 +1477,22 @@
                             });
                     }
                 }
+                
+                // Update exercise library
+                await supabaseClient
+                    .from('exercise_library')
+                    .upsert({
+                        user_id: currentUser.id,
+                        exercise_name: ex.name,
+                        tags: ex.tags || [],
+                        last_performed: now.toISOString(),
+                        last_metrics: {
+                            sets: ex.sets
+                        },
+                        last_notes: ex.notes || null
+                    }, {
+                        onConflict: 'user_id,exercise_name'
+                    });
             }
             
             clearDraft(); // Clear draft after successful save
