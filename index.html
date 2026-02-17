@@ -382,18 +382,8 @@
         <div class="exercise-box mb-4">
             <div class="mb-2">
                 <label class="text-sm font-bold">Add Exercise</label>
-                <div style="margin-top: 0.5rem; position: relative;">
-                    <input type="text" id="customExercise" name="exercise-name-input" placeholder="Exercise name..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                    <div id="exerciseAutocomplete" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
-                </div>
+                <input type="text" id="customExercise" placeholder="Exercise name..." style="margin-top: 0.5rem;">
                 <button class="btn btn-primary" id="addExerciseBtn" style="width: 100%; margin-top: 0.5rem;">Add Exercise</button>
-            </div>
-            
-            <!-- Last workout info (shows when exercise is selected) -->
-            <div id="lastWorkoutInfo" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.2);">
-                <p class="text-sm font-bold mb-1">Last time:</p>
-                <p id="lastWorkoutDetails" class="text-sm text-gray"></p>
-                <p id="lastWorkoutNotes" class="text-sm text-gray" style="font-style: italic; margin-top: 0.25rem;"></p>
             </div>
         </div>
         
@@ -858,9 +848,6 @@
             renderExercises();
             showWorkoutScreen();
             
-            // Setup exercise autocomplete
-            setupExerciseAutocomplete();
-            
             // Save initial draft
             saveDraft();
         }
@@ -1149,11 +1136,95 @@
                             <label class="text-xs text-gray">Exercise Notes (optional)</label>
                             <textarea id="exercise-notes-${ex.id}" rows="2" placeholder="How did this feel? Any form notes..." style="margin-top: 0.25rem;" onchange="updateExerciseNotes(${ex.id}, this.value)">${ex.notes || ''}</textarea>
                         </div>
+                        
+                        <!-- Exercise History -->
+                        <div id="history-${ex.id}" style="margin-top: 0.5rem;">
+                            <button onclick="toggleExerciseHistory(${ex.id}, '${ex.name.replace(/'/g, "\\'")}')" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.375rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;">
+                                <span>Exercise History</span>
+                                <span id="history-arrow-${ex.id}">▼</span>
+                            </button>
+                            <div id="history-content-${ex.id}" class="hidden" style="margin-top: 0.5rem; background: rgba(255, 255, 255, 0.03); padding: 0.75rem; border-radius: 0.375rem; border: 1px solid rgba(255, 255, 255, 0.1);">
+                                <p class="text-xs text-gray">Loading history...</p>
+                            </div>
+                        </div>
                     </div>
                 `;
                 container.appendChild(div);
             });
+            
+            // Load exercise history for each exercise
+            exercises.forEach(ex => {
+                loadExerciseHistory(ex.id, ex.name);
+            });
         }
+        
+        async function loadExerciseHistory(exerciseId, exerciseName) {
+            const historyContainer = document.getElementById(`history-${exerciseId}`);
+            if (!historyContainer) return;
+            
+            // Query past workouts with this exercise
+            const { data: pastExercises } = await supabaseClient
+                .from('exercises')
+                .select(`
+                    *,
+                    workout:workouts!inner(start_time, notes),
+                    sets(*)
+                `)
+                .eq('workout.user_id', currentUser.id)
+                .ilike('name', exerciseName)
+                .order('workout.start_time', { ascending: false })
+                .limit(3);
+            
+            if (!pastExercises || pastExercises.length === 0) {
+                historyContainer.innerHTML = '';
+                return;
+            }
+            
+            const isExpanded = false; // Start collapsed
+            
+            historyContainer.innerHTML = `
+                <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem;">
+                    <button onclick="toggleExerciseHistory(${exerciseId})" style="background: none; border: none; color: rgba(0, 245, 255, 0.7); cursor: pointer; font-size: 0.75rem; padding: 0.25rem 0; display: flex; align-items: center; gap: 0.25rem;">
+                        <span id="history-arrow-${exerciseId}">${isExpanded ? '▼' : '▶'}</span>
+                        <span>Last ${pastExercises.length} time${pastExercises.length > 1 ? 's' : ''}</span>
+                    </button>
+                    <div id="history-content-${exerciseId}" class="${isExpanded ? '' : 'hidden'}" style="margin-top: 0.5rem;">
+                        ${pastExercises.map(ex => {
+                            const date = new Date(ex.workout.start_time);
+                            const setDetails = ex.sets.map(s => {
+                                const parts = [];
+                                if (s.reps) parts.push(`${s.reps} reps`);
+                                if (s.weight) parts.push(`${s.weight} lbs`);
+                                if (s.time) parts.push(`${s.time} min`);
+                                if (s.distance) parts.push(`${s.distance} mi`);
+                                return parts.join(' @ ');
+                            }).filter(Boolean).join(', ');
+                            
+                            return `
+                                <div style="background: rgba(255, 255, 255, 0.03); padding: 0.5rem; border-radius: 0.375rem; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.05);">
+                                    <p class="text-xs font-bold" style="color: rgba(0, 245, 255, 0.8);">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    <p class="text-xs text-gray" style="margin-top: 0.25rem;">${setDetails || 'No data'}</p>
+                                    ${ex.workout.notes ? `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.workout.notes}"</p>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        window.toggleExerciseHistory = function(exerciseId) {
+            const content = document.getElementById(`history-content-${exerciseId}`);
+            const arrow = document.getElementById(`history-arrow-${exerciseId}`);
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                arrow.textContent = '▼';
+            } else {
+                content.classList.add('hidden');
+                arrow.textContent = '▶';
+            }
+        };
         
         window.updateSet = function(exerciseId, setIndex, field, value) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
@@ -1441,123 +1512,87 @@
             }, 50);
         };
         
-        // Exercise Autocomplete
-        async function setupExerciseAutocomplete() {
-            console.log('=== SETUP AUTOCOMPLETE CALLED ===');
+        window.toggleExerciseHistory = async function(exerciseId, exerciseName) {
+            const content = document.getElementById(`history-content-${exerciseId}`);
+            const arrow = document.getElementById(`history-arrow-${exerciseId}`);
             
-            const input = document.getElementById('customExercise');
-            const dropdown = document.getElementById('exerciseAutocomplete');
-            
-            if (!input) {
-                console.log('ERROR: customExercise input not found!');
-                return;
-            }
-            if (!dropdown) {
-                console.log('ERROR: exerciseAutocomplete dropdown not found!');
+            if (!content.classList.contains('hidden')) {
+                content.classList.add('hidden');
+                arrow.textContent = '▼';
                 return;
             }
             
-            console.log('Input and dropdown found successfully');
+            // Show and load history
+            content.classList.remove('hidden');
+            arrow.textContent = '▲';
+            content.innerHTML = '<p class="text-xs text-gray">Loading...</p>';
             
-            // Load exercise library from Supabase
-            const { data, error } = await supabaseClient
-                .from('exercise_library')
-                .select('*')
+            // Fetch last 3 times this exercise was performed
+            const { data: pastWorkouts } = await supabaseClient
+                .from('workouts')
+                .select(`
+                    id,
+                    start_time,
+                    exercises!inner (
+                        id,
+                        name,
+                        sets (*)
+                    )
+                `)
                 .eq('user_id', currentUser.id)
-                .order('last_performed', { ascending: false });
+                .eq('exercises.name', exerciseName)
+                .order('start_time', { ascending: false })
+                .limit(3);
             
-            if (error) {
-                console.log('Error loading exercise library:', error);
+            // Also get notes from exercise library
+            const { data: libraryData } = await supabaseClient
+                .from('exercise_library')
+                .select('last_notes, last_performed')
+                .eq('user_id', currentUser.id)
+                .eq('exercise_name', exerciseName)
+                .single();
+            
+            if (!pastWorkouts || pastWorkouts.length === 0) {
+                content.innerHTML = '<p class="text-xs text-gray">No previous history for this exercise</p>';
+                return;
             }
             
-            if (data) {
-                exerciseLibrary = data;
-                console.log('Exercise library loaded:', exerciseLibrary.length, 'exercises');
-                console.log('Exercises:', exerciseLibrary.map(ex => ex.exercise_name));
-            } else {
-                exerciseLibrary = [];
-                console.log('No exercises in library yet');
-            }
-            
-            // Add event listener
-            input.addEventListener('input', function(e) {
-                console.log('=== INPUT EVENT FIRED ===');
-                const value = this.value.trim().toLowerCase();
-                console.log('Input value:', value);
+            // Build history display
+            let historyHTML = '';
+            pastWorkouts.forEach((workout, idx) => {
+                const date = new Date(workout.start_time);
+                const exercise = workout.exercises.find(ex => ex.name === exerciseName);
                 
-                if (!value) {
-                    dropdown.classList.add('hidden');
-                    return;
+                if (!exercise) return;
+                
+                const setDetails = exercise.sets.map(s => {
+                    const parts = [];
+                    if (s.reps) parts.push(`${s.reps} reps`);
+                    if (s.weight) parts.push(`${s.weight} lbs`);
+                    if (s.time) parts.push(`${s.time} min`);
+                    if (s.distance) parts.push(`${s.distance} mi`);
+                    return parts.join(' @ ');
+                }).filter(Boolean).join(', ');
+                
+                // Show notes from last performed if this is the most recent
+                let notesHTML = '';
+                if (idx === 0 && libraryData && libraryData.last_notes) {
+                    notesHTML = `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${libraryData.last_notes}"</p>`;
                 }
                 
-                // Filter exercises
-                const matches = exerciseLibrary.filter(ex => 
-                    ex.exercise_name.toLowerCase().includes(value)
-                );
-                
-                console.log('Matches found:', matches.length);
-                console.log('Matching exercises:', matches.map(ex => ex.exercise_name));
-                
-                if (matches.length > 0) {
-                    dropdown.innerHTML = matches.slice(0, 8).map(ex => `
-                        <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);" 
-                             onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" 
-                             onmouseout="this.style.background='transparent'"
-                             onclick="window.selectExercise('${ex.exercise_name.replace(/'/g, "\\'")}', '${ex.id}')">
-                            <div class="text-sm font-bold">${ex.exercise_name}</div>
-                            ${ex.tags && ex.tags.length > 0 ? `<div class="text-xs text-gray">${ex.tags.join(', ')}</div>` : ''}
-                        </div>
-                    `).join('');
-                    dropdown.classList.remove('hidden');
-                    console.log('Dropdown shown');
-                } else {
-                    dropdown.classList.add('hidden');
-                    console.log('No matches - dropdown hidden');
-                }
+                historyHTML += `
+                    <div style="margin-bottom: ${idx < pastWorkouts.length - 1 ? '0.75rem' : '0'}; padding-bottom: ${idx < pastWorkouts.length - 1 ? '0.75rem' : '0'}; border-bottom: ${idx < pastWorkouts.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'};">
+                        <p class="text-xs font-bold mb-1">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                        <p class="text-xs text-gray">${setDetails || 'No data'}</p>
+                        ${notesHTML}
+                    </div>
+                `;
             });
             
-            console.log('Event listener added successfully');
-        }
-        
-        window.selectExercise = async function(exerciseName, libraryId) {
-            const input = document.getElementById('customExercise');
-            const dropdown = document.getElementById('exerciseAutocomplete');
-            const lastWorkoutInfo = document.getElementById('lastWorkoutInfo');
-            const lastWorkoutDetails = document.getElementById('lastWorkoutDetails');
-            
-            input.value = exerciseName;
-            dropdown.classList.add('hidden');
-            
-            // Show last workout info in the top section
-            const exercise = exerciseLibrary.find(ex => ex.id === libraryId);
-            if (exercise && exercise.last_metrics) {
-                const metrics = exercise.last_metrics;
-                const lastDate = new Date(exercise.last_performed);
-                let detailsText = '';
-                
-                if (metrics.sets && metrics.sets.length > 0) {
-                    const firstSet = metrics.sets[0];
-                    const setCount = metrics.sets.length;
-                    
-                    // Build description from first set
-                    const parts = [];
-                    if (firstSet.reps) parts.push(`${firstSet.reps} reps`);
-                    if (firstSet.weight) parts.push(`${firstSet.weight} lbs`);
-                    if (firstSet.time) parts.push(`${firstSet.time} min`);
-                    if (firstSet.distance) parts.push(`${firstSet.distance} mi`);
-                    
-                    detailsText = `(${lastDate.toLocaleDateString()}) ${setCount} sets × ${parts.join(' × ')}`;
-                    if (exercise.last_notes) {
-                        detailsText += ` - "${exercise.last_notes}"`;
-                    }
-                }
-                
-                lastWorkoutDetails.textContent = detailsText || 'No previous data';
-                lastWorkoutInfo.classList.remove('hidden');
-            } else {
-                lastWorkoutInfo.classList.add('hidden');
-            }
+            content.innerHTML = historyHTML || '<p class="text-xs text-gray">No history found</p>';
         };
+        
+        // Exercise Autocomplete
         
         // Timer
         function toggleTimer() {
@@ -1992,7 +2027,6 @@
             renderPreviousWorkouts();
             renderExercises();
             showWorkoutScreen();
-            setupExerciseAutocomplete();
         };
         
         window.toggleWorkoutMenu = function(workoutId) {
