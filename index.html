@@ -1611,27 +1611,59 @@
         
         // Exercise Autocomplete and Library
         async function setupExerciseAutocomplete() {
+            console.log('=== SETUP AUTOCOMPLETE START ===');
+            
             const input = document.getElementById('customExercise');
             const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
             const libraryBtn = document.getElementById('libraryBtn');
             const libraryDropdown = document.getElementById('libraryDropdown');
             
-            if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) return;
+            console.log('Elements found:', {
+                input: !!input,
+                autocompleteDropdown: !!autocompleteDropdown,
+                libraryBtn: !!libraryBtn,
+                libraryDropdown: !!libraryDropdown
+            });
+            
+            if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) {
+                console.log('Missing elements, aborting setup');
+                return;
+            }
             
             // Load exercise library from Supabase
-            const { data } = await supabaseClient
+            console.log('Loading exercise library from Supabase...');
+            const { data, error } = await supabaseClient
                 .from('exercise_library')
                 .select('*')
                 .eq('user_id', currentUser.id)
                 .order('last_performed', { ascending: false });
             
-            if (data) {
-                exerciseLibrary = data;
+            if (error) {
+                console.log('Error loading library:', error);
             }
             
+            if (data) {
+                exerciseLibrary = data;
+                console.log('Exercise library loaded:', exerciseLibrary.length, 'exercises');
+                console.log('Exercise names:', exerciseLibrary.map(ex => ex.exercise_name));
+            } else {
+                exerciseLibrary = [];
+                console.log('No exercises found');
+            }
+            
+            // Remove old event listeners by cloning
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            const finalInput = document.getElementById('customExercise');
+            
+            const newLibraryBtn = libraryBtn.cloneNode(true);
+            libraryBtn.parentNode.replaceChild(newLibraryBtn, libraryBtn);
+            const finalLibraryBtn = document.getElementById('libraryBtn');
+            
             // Autocomplete on input
-            input.addEventListener('input', function() {
+            finalInput.addEventListener('input', function() {
                 const value = this.value.trim().toLowerCase();
+                console.log('Input changed:', value);
                 
                 if (!value) {
                     autocompleteDropdown.classList.add('hidden');
@@ -1643,6 +1675,8 @@
                     .filter(ex => ex.exercise_name.toLowerCase().includes(value))
                     .slice(0, 8);
                 
+                console.log('Matches found:', matches.length);
+                
                 if (matches.length > 0) {
                     autocompleteDropdown.innerHTML = matches.map(ex => `
                         <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);" 
@@ -1650,35 +1684,40 @@
                              onmouseout="this.style.background='transparent'"
                              onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')">
                             <div class="text-sm font-bold">${ex.exercise_name}</div>
-                            ${ex.tags && ex.tags.length > 0 ? `<div class="text-xs text-gray">${ex.tags.join(', ')}</div>` : ''}
                         </div>
                     `).join('');
                     autocompleteDropdown.classList.remove('hidden');
+                    console.log('Autocomplete dropdown shown');
                 } else {
                     autocompleteDropdown.classList.add('hidden');
+                    console.log('No matches, dropdown hidden');
                 }
             });
             
             // Library button toggle
-            libraryBtn.addEventListener('click', function(e) {
+            finalLibraryBtn.addEventListener('click', function(e) {
+                console.log('Library button clicked');
                 e.stopPropagation();
                 libraryDropdown.classList.toggle('hidden');
                 autocompleteDropdown.classList.add('hidden');
                 
                 if (!libraryDropdown.classList.contains('hidden')) {
+                    console.log('Rendering library dropdown');
                     renderLibraryDropdown();
                 }
             });
             
             // Close dropdowns when clicking outside
             document.addEventListener('click', function(e) {
-                if (!input.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                if (!finalInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
                     autocompleteDropdown.classList.add('hidden');
                 }
-                if (!libraryBtn.contains(e.target) && !libraryDropdown.contains(e.target)) {
+                if (!finalLibraryBtn.contains(e.target) && !libraryDropdown.contains(e.target)) {
                     libraryDropdown.classList.add('hidden');
                 }
             });
+            
+            console.log('=== SETUP COMPLETE ===');
         }
         
         function renderLibraryDropdown() {
