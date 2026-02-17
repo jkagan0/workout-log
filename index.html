@@ -998,17 +998,13 @@
             // Exercise-specific preferences override category defaults
             const savedMetrics = exercisePreferences[name] || defaultMetrics;
             
-            // Load tags from exercise library if available
-            const libraryExercise = exerciseLibrary.find(ex => ex.exercise_name.toLowerCase() === name.toLowerCase());
-            const savedTags = libraryExercise && libraryExercise.tags ? libraryExercise.tags : [];
-            
             const exercise = {
                 id: Date.now(),
                 name: name,
                 metrics: savedMetrics,
                 sets: [createEmptySet(savedMetrics)],
                 notes: '',
-                tags: savedTags
+                tags: []
             };
             exercises.push(exercise);
             renderExercises();
@@ -1618,56 +1614,32 @@
             const libraryBtn = document.getElementById('libraryBtn');
             const libraryDropdown = document.getElementById('libraryDropdown');
             
-            console.log('Elements found:', {
-                input: !!input,
-                autocompleteDropdown: !!autocompleteDropdown,
-                libraryBtn: !!libraryBtn,
-                libraryDropdown: !!libraryDropdown
-            });
-            
             if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) {
                 console.log('Missing elements, aborting setup');
                 return;
             }
             
-            // Load exercise library from Supabase
-            console.log('Loading exercise library from Supabase...');
-            const { data, error } = await supabaseClient
-                .from('exercise_library')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('last_performed', { ascending: false });
+            // Load exercises directly from workouts - no exercise_library needed!
+            console.log('Loading exercises from past workouts...');
+            const { data: workouts } = await supabaseClient
+                .from('workouts')
+                .select('exercises(name, notes)')
+                .eq('user_id', currentUser.id);
             
-            if (error) {
-                console.log('Error loading library:', error);
+            // Extract unique exercise names
+            const exerciseSet = new Set();
+            if (workouts) {
+                workouts.forEach(w => {
+                    if (w.exercises) {
+                        w.exercises.forEach(ex => {
+                            if (ex.name) exerciseSet.add(ex.name);
+                        });
+                    }
+                });
             }
             
-            if (data) {
-                exerciseLibrary = data;
-                console.log('Exercise library loaded:', exerciseLibrary.length, 'exercises');
-                console.log('Exercise names:', exerciseLibrary.map(ex => ex.exercise_name));
-            } else {
-                exerciseLibrary = [];
-                console.log('No exercises found in library');
-            }
-            
-            // If library is empty but user has workouts, migrate them
-            if (exerciseLibrary.length === 0) {
-                console.log('Library empty, checking for workouts to migrate...');
-                await migrateWorkoutsToLibrary();
-                
-                // Reload library after migration
-                const { data: reloadedData } = await supabaseClient
-                    .from('exercise_library')
-                    .select('*')
-                    .eq('user_id', currentUser.id)
-                    .order('last_performed', { ascending: false });
-                
-                if (reloadedData) {
-                    exerciseLibrary = reloadedData;
-                    console.log('Library reloaded after migration:', exerciseLibrary.length, 'exercises');
-                }
-            }
+            exerciseLibrary = Array.from(exerciseSet).map(name => ({ exercise_name: name, tags: [] }));
+            console.log('Loaded exercises:', exerciseLibrary.length);
             
             // Remove old event listeners by cloning
             const newInput = input.cloneNode(true);
@@ -1681,19 +1653,15 @@
             // Autocomplete on input
             finalInput.addEventListener('input', function() {
                 const value = this.value.trim().toLowerCase();
-                console.log('Input changed:', value);
                 
                 if (!value) {
                     autocompleteDropdown.classList.add('hidden');
                     return;
                 }
                 
-                // Filter exercises
                 const matches = exerciseLibrary
                     .filter(ex => ex.exercise_name.toLowerCase().includes(value))
                     .slice(0, 8);
-                
-                console.log('Matches found:', matches.length);
                 
                 if (matches.length > 0) {
                     autocompleteDropdown.innerHTML = matches.map(ex => `
@@ -1705,22 +1673,18 @@
                         </div>
                     `).join('');
                     autocompleteDropdown.classList.remove('hidden');
-                    console.log('Autocomplete dropdown shown');
                 } else {
                     autocompleteDropdown.classList.add('hidden');
-                    console.log('No matches, dropdown hidden');
                 }
             });
             
             // Library button toggle
             finalLibraryBtn.addEventListener('click', function(e) {
-                console.log('Library button clicked');
                 e.stopPropagation();
                 libraryDropdown.classList.toggle('hidden');
                 autocompleteDropdown.classList.add('hidden');
                 
                 if (!libraryDropdown.classList.contains('hidden')) {
-                    console.log('Rendering library dropdown');
                     renderLibraryDropdown();
                 }
             });
@@ -1741,153 +1705,32 @@
         function renderLibraryDropdown() {
             const libraryDropdown = document.getElementById('libraryDropdown');
             
-            console.log('Rendering library, exercises:', exerciseLibrary.length);
-            
             if (exerciseLibrary.length === 0) {
                 libraryDropdown.innerHTML = `
-                    <p class="text-xs text-gray" style="margin-bottom: 0.5rem;">No exercises in your library yet.</p>
-                    <p class="text-xs text-gray">💡 Tip: Complete a workout to build your exercise library. Then you can browse and search your exercises here!</p>
+                    <p class="text-xs text-gray">No exercises yet. Start adding exercises to your workouts!</p>
                 `;
                 return;
             }
             
-            // Group exercises by tags
-            const exercisesByTag = {};
-            const untagged = [];
+            // Sort alphabetically
+            const sorted = [...exerciseLibrary].sort((a, b) => 
+                a.exercise_name.localeCompare(b.exercise_name)
+            );
             
-            exerciseLibrary.forEach(ex => {
-                if (ex.tags && ex.tags.length > 0) {
-                    ex.tags.forEach(tag => {
-                        if (!exercisesByTag[tag]) {
-                            exercisesByTag[tag] = [];
-                        }
-                        exercisesByTag[tag].push(ex);
-                    });
-                } else {
-                    untagged.push(ex);
-                }
-            });
-            
-            // Sort tags alphabetically
-            const sortedTags = Object.keys(exercisesByTag).sort();
-            
-            let html = '';
-            
-            // Render each tag group
-            sortedTags.forEach(tag => {
-                const exercises = exercisesByTag[tag];
-                // Remove duplicates
-                const uniqueExercises = exercises.filter((ex, index, self) => 
-                    index === self.findIndex(e => e.exercise_name === ex.exercise_name)
-                );
-                
+            let html = '<div style="display: flex; flex-direction: column; gap: 0.25rem;">';
+            sorted.forEach(ex => {
                 html += `
-                    <div style="margin-bottom: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <span style="font-weight: 600; font-size: 0.875rem; color: rgba(0, 245, 255, 0.9);">${tag}</span>
-                            <span style="font-size: 0.75rem; color: rgba(224, 224, 224, 0.5);">(${uniqueExercises.length})</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                            ${uniqueExercises.map(ex => `
-                                <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
-                                     style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
-                                     onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
-                                     onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
-                                    ${ex.exercise_name}
-                                </div>
-                            `).join('')}
-                        </div>
+                    <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
+                         style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
+                         onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
+                         onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                        ${ex.exercise_name}
                     </div>
                 `;
             });
-            
-            // Add untagged exercises
-            if (untagged.length > 0) {
-                html += `
-                    <div style="margin-bottom: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                            <span style="font-weight: 600; font-size: 0.875rem; color: rgba(224, 224, 224, 0.6);">Untagged</span>
-                            <span style="font-size: 0.75rem; color: rgba(224, 224, 224, 0.5);">(${untagged.length})</span>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                            ${untagged.map(ex => `
-                                <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
-                                     style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
-                                     onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
-                                     onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
-                                    ${ex.exercise_name}
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
+            html += '</div>';
             
             libraryDropdown.innerHTML = html;
-        }
-        
-        // Migrate existing workouts to exercise_library
-        async function migrateWorkoutsToLibrary() {
-            console.log('Starting migration...');
-            
-            // Get all user's workouts with exercises
-            const { data: workouts } = await supabaseClient
-                .from('workouts')
-                .select(`
-                    id,
-                    start_time,
-                    exercises (
-                        name,
-                        notes,
-                        sets (*)
-                    )
-                `)
-                .eq('user_id', currentUser.id)
-                .order('start_time', { ascending: false });
-            
-            if (!workouts || workouts.length === 0) {
-                console.log('No workouts to migrate');
-                return;
-            }
-            
-            console.log('Found', workouts.length, 'workouts to process');
-            
-            // Group exercises by name to get the most recent of each
-            const exerciseMap = {};
-            
-            workouts.forEach(workout => {
-                workout.exercises.forEach(ex => {
-                    if (!exerciseMap[ex.name]) {
-                        exerciseMap[ex.name] = {
-                            name: ex.name,
-                            last_performed: workout.start_time,
-                            last_metrics: { sets: ex.sets },
-                            last_notes: ex.notes
-                        };
-                    }
-                });
-            });
-            
-            console.log('Migrating', Object.keys(exerciseMap).length, 'unique exercises');
-            
-            // Insert into exercise_library
-            for (const exerciseName in exerciseMap) {
-                const ex = exerciseMap[exerciseName];
-                await supabaseClient
-                    .from('exercise_library')
-                    .upsert({
-                        user_id: currentUser.id,
-                        exercise_name: ex.name,
-                        tags: [],
-                        last_performed: ex.last_performed,
-                        last_metrics: ex.last_metrics,
-                        last_notes: ex.last_notes
-                    }, {
-                        onConflict: 'user_id,exercise_name'
-                    });
-            }
-            
-            console.log('Migration complete!');
         }
         
         window.selectExerciseFromLibrary = function(exerciseName) {
@@ -1895,10 +1738,8 @@
             const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
             const libraryDropdown = document.getElementById('libraryDropdown');
             
-            // Add the exercise
             addExercise(exerciseName);
             
-            // Clear input and close dropdowns
             input.value = '';
             autocompleteDropdown.classList.add('hidden');
             libraryDropdown.classList.add('hidden');
@@ -2024,64 +1865,9 @@
                                 notes: set.notes || null
                             });
                     }
-                }
-                
-                // Update exercise library
-                console.log('=== SAVING TO EXERCISE LIBRARY ===');
-                console.log('Exercise name:', ex.name);
-                console.log('Tags:', ex.tags);
-                console.log('Notes:', ex.notes);
-                console.log('User ID:', currentUser.id);
-                
-                const upsertData = {
-                    user_id: currentUser.id,
-                    exercise_name: ex.name,
-                    tags: ex.tags || [],
-                    last_performed: now.toISOString(),
-                    last_metrics: {
-                        sets: ex.sets
-                    },
-                    last_notes: ex.notes || null
-                };
-                
-                console.log('Upserting data:', JSON.stringify(upsertData, null, 2));
-                
-                const { data: libraryData, error: libraryError } = await supabaseClient
-                    .from('exercise_library')
-                    .upsert(upsertData, {
-                        onConflict: 'user_id,exercise_name'
-                    })
-                    .select();
-                
-                if (libraryError) {
-                    console.error('❌ ERROR saving to exercise_library:');
-                    console.error('Error code:', libraryError.code);
-                    console.error('Error message:', libraryError.message);
-                    console.error('Error details:', libraryError.details);
-                    console.error('Error hint:', libraryError.hint);
-                    console.error('Full error object:', JSON.stringify(libraryError, null, 2));
-                } else {
-                    console.log('✅ Successfully saved to exercise_library:', libraryData);
-                }
             }
             
-            // Reload exercise library so it's immediately available
-            console.log('Reloading exercise library...');
-            const { data: updatedLibrary, error: reloadError } = await supabaseClient
-                .from('exercise_library')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('last_performed', { ascending: false });
-            
-            if (reloadError) {
-                console.error('ERROR reloading library:', reloadError);
-            } else if (updatedLibrary) {
-                exerciseLibrary = updatedLibrary;
-                console.log('✅ Exercise library reloaded:', exerciseLibrary.length, 'exercises');
-                console.log('Exercise names:', exerciseLibrary.map(ex => ex.exercise_name));
-            }
-            
-            clearDraft(); // Clear draft after successful save
+            clearDraft();
             alert('Workout saved!');
             showHome();
         }
