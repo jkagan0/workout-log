@@ -2027,32 +2027,41 @@
                 }
                 
                 // Update exercise library
-                console.log('Saving to exercise_library:', {
+                console.log('=== SAVING TO EXERCISE LIBRARY ===');
+                console.log('Exercise name:', ex.name);
+                console.log('Tags:', ex.tags);
+                console.log('Notes:', ex.notes);
+                console.log('User ID:', currentUser.id);
+                
+                const upsertData = {
+                    user_id: currentUser.id,
                     exercise_name: ex.name,
-                    tags: ex.tags,
-                    notes: ex.notes
-                });
+                    tags: ex.tags || [],
+                    last_performed: now.toISOString(),
+                    last_metrics: {
+                        sets: ex.sets
+                    },
+                    last_notes: ex.notes || null
+                };
+                
+                console.log('Upserting data:', JSON.stringify(upsertData, null, 2));
                 
                 const { data: libraryData, error: libraryError } = await supabaseClient
                     .from('exercise_library')
-                    .upsert({
-                        user_id: currentUser.id,
-                        exercise_name: ex.name,
-                        tags: ex.tags || [],
-                        last_performed: now.toISOString(),
-                        last_metrics: {
-                            sets: ex.sets
-                        },
-                        last_notes: ex.notes || null
-                    }, {
+                    .upsert(upsertData, {
                         onConflict: 'user_id,exercise_name'
                     })
                     .select();
                 
                 if (libraryError) {
-                    console.error('ERROR saving to exercise_library:', libraryError);
+                    console.error('❌ ERROR saving to exercise_library:');
+                    console.error('Error code:', libraryError.code);
+                    console.error('Error message:', libraryError.message);
+                    console.error('Error details:', libraryError.details);
+                    console.error('Error hint:', libraryError.hint);
+                    console.error('Full error object:', JSON.stringify(libraryError, null, 2));
                 } else {
-                    console.log('Successfully saved to exercise_library:', libraryData);
+                    console.log('✅ Successfully saved to exercise_library:', libraryData);
                 }
             }
             
