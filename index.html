@@ -2027,7 +2027,13 @@
                 }
                 
                 // Update exercise library
-                const { error: libraryError } = await supabaseClient
+                console.log('Saving to exercise_library:', {
+                    exercise_name: ex.name,
+                    tags: ex.tags,
+                    notes: ex.notes
+                });
+                
+                const { data: libraryData, error: libraryError } = await supabaseClient
                     .from('exercise_library')
                     .upsert({
                         user_id: currentUser.id,
@@ -2040,23 +2046,30 @@
                         last_notes: ex.notes || null
                     }, {
                         onConflict: 'user_id,exercise_name'
-                    });
+                    })
+                    .select();
                 
                 if (libraryError) {
-                    console.error('Error updating exercise library:', libraryError);
+                    console.error('ERROR saving to exercise_library:', libraryError);
+                } else {
+                    console.log('Successfully saved to exercise_library:', libraryData);
                 }
             }
             
             // Reload exercise library so it's immediately available
-            const { data: updatedLibrary } = await supabaseClient
+            console.log('Reloading exercise library...');
+            const { data: updatedLibrary, error: reloadError } = await supabaseClient
                 .from('exercise_library')
                 .select('*')
                 .eq('user_id', currentUser.id)
                 .order('last_performed', { ascending: false });
             
-            if (updatedLibrary) {
+            if (reloadError) {
+                console.error('ERROR reloading library:', reloadError);
+            } else if (updatedLibrary) {
                 exerciseLibrary = updatedLibrary;
-                console.log('Exercise library updated:', exerciseLibrary.length, 'exercises');
+                console.log('✅ Exercise library reloaded:', exerciseLibrary.length, 'exercises');
+                console.log('Exercise names:', exerciseLibrary.map(ex => ex.exercise_name));
             }
             
             clearDraft(); // Clear draft after successful save
