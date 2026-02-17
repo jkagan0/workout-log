@@ -382,8 +382,24 @@
         <div class="exercise-box mb-4">
             <div class="mb-2">
                 <label class="text-sm font-bold">Add Exercise</label>
-                <input type="text" id="customExercise" placeholder="Exercise name..." style="margin-top: 0.5rem;">
-                <button class="btn btn-primary" id="addExerciseBtn" style="width: 100%; margin-top: 0.5rem;">Add Exercise</button>
+                <div style="margin-top: 0.5rem; position: relative;">
+                    <input type="text" id="customExercise" name="exercise-name-input" placeholder="Type to search or browse library..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    
+                    <!-- Autocomplete dropdown -->
+                    <div id="exerciseAutocomplete" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                </div>
+                
+                <div class="flex gap-2" style="margin-top: 0.5rem;">
+                    <button class="btn btn-primary" id="addExerciseBtn" style="flex: 1;">Add Exercise</button>
+                    <div style="position: relative; flex: 1;">
+                        <button class="btn btn-secondary" id="libraryBtn" style="width: 100%;">Library ▼</button>
+                        
+                        <!-- Library dropdown -->
+                        <div id="libraryDropdown" class="hidden" style="position: absolute; top: 100%; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; min-width: 300px; max-width: 400px; max-height: 400px; overflow-y: auto; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); padding: 0.75rem;">
+                            <p class="text-xs text-gray">Loading your exercise library...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -848,6 +864,9 @@
             renderExercises();
             showWorkoutScreen();
             
+            // Setup exercise autocomplete and library
+            setupExerciseAutocomplete();
+            
             // Save initial draft
             saveDraft();
         }
@@ -965,12 +984,18 @@
         }
         
         function addExercise(name) {
-            // Check if we have saved preferences for this exercise
+            // Load category default metrics (remembers what you used last time for this workout type)
+            const categoryKey = `categoryMetrics_${currentWorkout.name}`;
+            const savedCategoryMetrics = localStorage.getItem(categoryKey);
+            
             let defaultMetrics = ['reps', 'weight'];
             if (currentWorkout.name === 'Cardio') {
                 defaultMetrics = ['time', 'distance', 'speed', 'incline'];
+            } else if (savedCategoryMetrics) {
+                defaultMetrics = JSON.parse(savedCategoryMetrics);
             }
             
+            // Exercise-specific preferences override category defaults
             const savedMetrics = exercisePreferences[name] || defaultMetrics;
             
             // Load tags from exercise library if available
@@ -1307,6 +1332,11 @@
             if (editorWasOpen) {
                 document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
             }
+            
+            // Save as category default for future exercises in this workout type
+            const categoryKey = `categoryMetrics_${currentWorkout.name}`;
+            localStorage.setItem(categoryKey, JSON.stringify(exercise.metrics));
+            
             saveDraft();
         };
         
@@ -1579,7 +1609,174 @@
             content.innerHTML = historyHTML || '<p class="text-xs text-gray">No history found</p>';
         };
         
-        // Exercise Autocomplete
+        // Exercise Autocomplete and Library
+        async function setupExerciseAutocomplete() {
+            const input = document.getElementById('customExercise');
+            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
+            const libraryBtn = document.getElementById('libraryBtn');
+            const libraryDropdown = document.getElementById('libraryDropdown');
+            
+            if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) return;
+            
+            // Load exercise library from Supabase
+            const { data } = await supabaseClient
+                .from('exercise_library')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('last_performed', { ascending: false });
+            
+            if (data) {
+                exerciseLibrary = data;
+            }
+            
+            // Autocomplete on input
+            input.addEventListener('input', function() {
+                const value = this.value.trim().toLowerCase();
+                
+                if (!value) {
+                    autocompleteDropdown.classList.add('hidden');
+                    return;
+                }
+                
+                // Filter exercises
+                const matches = exerciseLibrary
+                    .filter(ex => ex.exercise_name.toLowerCase().includes(value))
+                    .slice(0, 8);
+                
+                if (matches.length > 0) {
+                    autocompleteDropdown.innerHTML = matches.map(ex => `
+                        <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);" 
+                             onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" 
+                             onmouseout="this.style.background='transparent'"
+                             onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')">
+                            <div class="text-sm font-bold">${ex.exercise_name}</div>
+                            ${ex.tags && ex.tags.length > 0 ? `<div class="text-xs text-gray">${ex.tags.join(', ')}</div>` : ''}
+                        </div>
+                    `).join('');
+                    autocompleteDropdown.classList.remove('hidden');
+                } else {
+                    autocompleteDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Library button toggle
+            libraryBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                libraryDropdown.classList.toggle('hidden');
+                autocompleteDropdown.classList.add('hidden');
+                
+                if (!libraryDropdown.classList.contains('hidden')) {
+                    renderLibraryDropdown();
+                }
+            });
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                    autocompleteDropdown.classList.add('hidden');
+                }
+                if (!libraryBtn.contains(e.target) && !libraryDropdown.contains(e.target)) {
+                    libraryDropdown.classList.add('hidden');
+                }
+            });
+        }
+        
+        function renderLibraryDropdown() {
+            const libraryDropdown = document.getElementById('libraryDropdown');
+            
+            if (exerciseLibrary.length === 0) {
+                libraryDropdown.innerHTML = '<p class="text-xs text-gray">No exercises in your library yet. Start adding exercises to build your library!</p>';
+                return;
+            }
+            
+            // Group exercises by tags
+            const exercisesByTag = {};
+            const untagged = [];
+            
+            exerciseLibrary.forEach(ex => {
+                if (ex.tags && ex.tags.length > 0) {
+                    ex.tags.forEach(tag => {
+                        if (!exercisesByTag[tag]) {
+                            exercisesByTag[tag] = [];
+                        }
+                        exercisesByTag[tag].push(ex);
+                    });
+                } else {
+                    untagged.push(ex);
+                }
+            });
+            
+            // Sort tags alphabetically
+            const sortedTags = Object.keys(exercisesByTag).sort();
+            
+            let html = '';
+            
+            // Render each tag group
+            sortedTags.forEach(tag => {
+                const exercises = exercisesByTag[tag];
+                // Remove duplicates
+                const uniqueExercises = exercises.filter((ex, index, self) => 
+                    index === self.findIndex(e => e.exercise_name === ex.exercise_name)
+                );
+                
+                html += `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600; font-size: 0.875rem; color: rgba(0, 245, 255, 0.9);">${tag}</span>
+                            <span style="font-size: 0.75rem; color: rgba(224, 224, 224, 0.5);">(${uniqueExercises.length})</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            ${uniqueExercises.map(ex => `
+                                <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
+                                     style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
+                                     onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
+                                     onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                                    ${ex.exercise_name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add untagged exercises
+            if (untagged.length > 0) {
+                html += `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="font-weight: 600; font-size: 0.875rem; color: rgba(224, 224, 224, 0.6);">Untagged</span>
+                            <span style="font-size: 0.75rem; color: rgba(224, 224, 224, 0.5);">(${untagged.length})</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                            ${untagged.map(ex => `
+                                <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
+                                     style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
+                                     onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
+                                     onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
+                                    ${ex.exercise_name}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            libraryDropdown.innerHTML = html;
+        }
+        
+        window.selectExerciseFromLibrary = function(exerciseName) {
+            const input = document.getElementById('customExercise');
+            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
+            const libraryDropdown = document.getElementById('libraryDropdown');
+            
+            // Add the exercise
+            addExercise(exerciseName);
+            
+            // Clear input and close dropdowns
+            input.value = '';
+            autocompleteDropdown.classList.add('hidden');
+            libraryDropdown.classList.add('hidden');
+        };
         
         // Timer
         function toggleTimer() {
@@ -1673,12 +1870,13 @@
             for (let i = 0; i < exercises.length; i++) {
                 const ex = exercises[i];
                 
-                const { data: exercise, error: exError } = await supabaseClient
+                const { data: exercise, error: exError} = await supabaseClient
                     .from('exercises')
                     .insert({
                         workout_id: workout.id,
                         name: ex.name,
-                        exercise_order: i
+                        exercise_order: i,
+                        notes: ex.notes || null
                     })
                     .select()
                     .single();
@@ -1823,7 +2021,8 @@
                                         if (s.incline) parts.push(`${s.incline}% incline`);
                                         return parts.join(', ');
                                     }).filter(Boolean).join(' | ');
-                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
+                                    const notesHTML = ex.notes ? `<div class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.notes}"</div>` : '';
+                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${details || 'No data'}${notesHTML}</div>`;
                                 } else {
                                     const setDetails = ex.sets.map(s => {
                                         if (s.reps && s.weight) return `${s.reps} reps @ ${s.weight} lbs`;
@@ -1831,7 +2030,8 @@
                                         if (s.weight) return `${s.weight} lbs`;
                                         return '';
                                     }).filter(Boolean).join(', ');
-                                    return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
+                                    const notesHTML = ex.notes ? `<div class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.notes}"</div>` : '';
+                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}${notesHTML}</div>`;
                                 }
                             }).join('')}
                         </div>
