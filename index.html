@@ -1545,20 +1545,23 @@
             content.innerHTML = '<p class="text-xs text-gray">Loading...</p>';
             
             // Fetch last 3 times this exercise was performed
-            const { data: pastWorkouts } = await supabaseClient
-                .from('workouts')
+            // First get exercises with this name
+            const { data: exercisesData } = await supabaseClient
+                .from('exercises')
                 .select(`
                     id,
-                    start_time,
-                    exercises!inner (
+                    name,
+                    notes,
+                    workout_id,
+                    workouts!inner (
                         id,
-                        name,
-                        sets (*)
-                    )
+                        start_time
+                    ),
+                    sets (*)
                 `)
-                .eq('user_id', currentUser.id)
-                .eq('exercises.name', exerciseName)
-                .order('start_time', { ascending: false })
+                .eq('name', exerciseName)
+                .eq('workouts.user_id', currentUser.id)
+                .order('workouts(start_time)', { ascending: false })
                 .limit(3);
             
             // Also get notes from exercise library
@@ -1569,18 +1572,15 @@
                 .eq('exercise_name', exerciseName)
                 .single();
             
-            if (!pastWorkouts || pastWorkouts.length === 0) {
+            if (!exercisesData || exercisesData.length === 0) {
                 content.innerHTML = '<p class="text-xs text-gray">No previous history for this exercise</p>';
                 return;
             }
             
             // Build history display
             let historyHTML = '';
-            pastWorkouts.forEach((workout, idx) => {
-                const date = new Date(workout.start_time);
-                const exercise = workout.exercises.find(ex => ex.name === exerciseName);
-                
-                if (!exercise) return;
+            exercisesData.forEach((exercise, idx) => {
+                const date = new Date(exercise.workouts.start_time);
                 
                 const setDetails = exercise.sets.map(s => {
                     const parts = [];
@@ -1591,14 +1591,14 @@
                     return parts.join(' @ ');
                 }).filter(Boolean).join(', ');
                 
-                // Show notes from last performed if this is the most recent
+                // Show exercise notes if available
                 let notesHTML = '';
-                if (idx === 0 && libraryData && libraryData.last_notes) {
-                    notesHTML = `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${libraryData.last_notes}"</p>`;
+                if (exercise.notes) {
+                    notesHTML = `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${exercise.notes}"</p>`;
                 }
                 
                 historyHTML += `
-                    <div style="margin-bottom: ${idx < pastWorkouts.length - 1 ? '0.75rem' : '0'}; padding-bottom: ${idx < pastWorkouts.length - 1 ? '0.75rem' : '0'}; border-bottom: ${idx < pastWorkouts.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'};">
+                    <div style="margin-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; padding-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; border-bottom: ${idx < exercisesData.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'};">
                         <p class="text-xs font-bold mb-1">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                         <p class="text-xs text-gray">${setDetails || 'No data'}</p>
                         ${notesHTML}
