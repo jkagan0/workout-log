@@ -1648,7 +1648,25 @@
                 console.log('Exercise names:', exerciseLibrary.map(ex => ex.exercise_name));
             } else {
                 exerciseLibrary = [];
-                console.log('No exercises found');
+                console.log('No exercises found in library');
+            }
+            
+            // If library is empty but user has workouts, migrate them
+            if (exerciseLibrary.length === 0) {
+                console.log('Library empty, checking for workouts to migrate...');
+                await migrateWorkoutsToLibrary();
+                
+                // Reload library after migration
+                const { data: reloadedData } = await supabaseClient
+                    .from('exercise_library')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('last_performed', { ascending: false });
+                
+                if (reloadedData) {
+                    exerciseLibrary = reloadedData;
+                    console.log('Library reloaded after migration:', exerciseLibrary.length, 'exercises');
+                }
             }
             
             // Remove old event listeners by cloning
@@ -1723,8 +1741,13 @@
         function renderLibraryDropdown() {
             const libraryDropdown = document.getElementById('libraryDropdown');
             
+            console.log('Rendering library, exercises:', exerciseLibrary.length);
+            
             if (exerciseLibrary.length === 0) {
-                libraryDropdown.innerHTML = '<p class="text-xs text-gray">No exercises in your library yet. Start adding exercises to build your library!</p>';
+                libraryDropdown.innerHTML = `
+                    <p class="text-xs text-gray" style="margin-bottom: 0.5rem;">No exercises in your library yet.</p>
+                    <p class="text-xs text-gray">💡 Tip: Complete a workout to build your exercise library. Then you can browse and search your exercises here!</p>
+                `;
                 return;
             }
             
@@ -1801,6 +1824,70 @@
             }
             
             libraryDropdown.innerHTML = html;
+        }
+        
+        // Migrate existing workouts to exercise_library
+        async function migrateWorkoutsToLibrary() {
+            console.log('Starting migration...');
+            
+            // Get all user's workouts with exercises
+            const { data: workouts } = await supabaseClient
+                .from('workouts')
+                .select(`
+                    id,
+                    start_time,
+                    exercises (
+                        name,
+                        notes,
+                        sets (*)
+                    )
+                `)
+                .eq('user_id', currentUser.id)
+                .order('start_time', { ascending: false });
+            
+            if (!workouts || workouts.length === 0) {
+                console.log('No workouts to migrate');
+                return;
+            }
+            
+            console.log('Found', workouts.length, 'workouts to process');
+            
+            // Group exercises by name to get the most recent of each
+            const exerciseMap = {};
+            
+            workouts.forEach(workout => {
+                workout.exercises.forEach(ex => {
+                    if (!exerciseMap[ex.name]) {
+                        exerciseMap[ex.name] = {
+                            name: ex.name,
+                            last_performed: workout.start_time,
+                            last_metrics: { sets: ex.sets },
+                            last_notes: ex.notes
+                        };
+                    }
+                });
+            });
+            
+            console.log('Migrating', Object.keys(exerciseMap).length, 'unique exercises');
+            
+            // Insert into exercise_library
+            for (const exerciseName in exerciseMap) {
+                const ex = exerciseMap[exerciseName];
+                await supabaseClient
+                    .from('exercise_library')
+                    .upsert({
+                        user_id: currentUser.id,
+                        exercise_name: ex.name,
+                        tags: [],
+                        last_performed: ex.last_performed,
+                        last_metrics: ex.last_metrics,
+                        last_notes: ex.last_notes
+                    }, {
+                        onConflict: 'user_id,exercise_name'
+                    });
+            }
+            
+            console.log('Migration complete!');
         }
         
         window.selectExerciseFromLibrary = function(exerciseName) {
@@ -1940,7 +2027,7 @@
                 }
                 
                 // Update exercise library
-                await supabaseClient
+                const { error: libraryError } = await supabaseClient
                     .from('exercise_library')
                     .upsert({
                         user_id: currentUser.id,
@@ -1954,6 +2041,22 @@
                     }, {
                         onConflict: 'user_id,exercise_name'
                     });
+                
+                if (libraryError) {
+                    console.error('Error updating exercise library:', libraryError);
+                }
+            }
+            
+            // Reload exercise library so it's immediately available
+            const { data: updatedLibrary } = await supabaseClient
+                .from('exercise_library')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('last_performed', { ascending: false });
+            
+            if (updatedLibrary) {
+                exerciseLibrary = updatedLibrary;
+                console.log('Exercise library updated:', exerciseLibrary.length, 'exercises');
             }
             
             clearDraft(); // Clear draft after successful save
