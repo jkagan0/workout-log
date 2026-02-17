@@ -1213,19 +1213,6 @@
             `;
         }
         
-        window.toggleExerciseHistory = function(exerciseId) {
-            const content = document.getElementById(`history-content-${exerciseId}`);
-            const arrow = document.getElementById(`history-arrow-${exerciseId}`);
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                arrow.textContent = '▼';
-            } else {
-                content.classList.add('hidden');
-                arrow.textContent = '▶';
-            }
-        };
-        
         window.updateSet = function(exerciseId, setIndex, field, value) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (exercise && exercise.sets[setIndex]) {
@@ -1918,17 +1905,16 @@
                     };
                 }
                 
-                const dotsHTML = dayWorkouts.slice(0, 3).map(w => {
+                const workoutLabels = dayWorkouts.slice(0, 3).map(w => {
                     const cat = workoutCategories.find(c => c.name === w.type);
-                    console.log('Workout type:', w.type, 'Found category:', cat);
-                    return `<span class="color-dot" style="background: ${cat ? cat.color : '#3b82f6'}; width: 0.4rem; height: 0.4rem; margin: 0.0625rem; flex-shrink: 0;"></span>`;
+                    return `<span style="background: ${cat ? cat.color : '#3b82f6'}; color: white; padding: 0.0625rem 0.25rem; border-radius: 0.25rem; font-size: 0.5rem; font-weight: 600; margin-bottom: 0.125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;">${w.type}</span>`;
                 }).join('');
                 
-                const extraCount = dayWorkouts.length > 3 ? `<span style="font-size: 0.5rem; color: #64748b; margin-left: 0.125rem;">+${dayWorkouts.length - 3}</span>` : '';
+                const extraCount = dayWorkouts.length > 3 ? `<span style="font-size: 0.5rem; color: #64748b;">+${dayWorkouts.length - 3}</span>` : '';
                 
                 dayCell.innerHTML = `
                     <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.125rem; line-height: 1;">${day}</div>
-                    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.0625rem;">${dotsHTML}${extraCount}</div>
+                    <div style="display: flex; flex-direction: column; gap: 0.125rem; overflow: hidden;">${workoutLabels}${extraCount}</div>
                 `;
                 calendarGrid.appendChild(dayCell);
             }
