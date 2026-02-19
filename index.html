@@ -231,12 +231,97 @@
             100% { transform: rotate(360deg); }
         }
         
-        /* Neon accent line */
         .neon-line {
             height: 2px;
             background: linear-gradient(90deg, transparent, #00f5ff, #7b2ff7, transparent);
             margin: 1rem 0;
             box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        /* Library dropdown styles */
+        .library-dropdown {
+            position: fixed !important;
+            background: rgba(15, 15, 35, 0.98) !important;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 0.75rem;
+            z-index: 99999 !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 245, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .library-tag-group {
+            border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+        }
+
+        .library-tag-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.625rem 0.875rem;
+            cursor: pointer;
+            background: rgba(0, 245, 255, 0.05);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: rgba(0, 245, 255, 0.8);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+
+        .library-tag-header:hover {
+            background: rgba(0, 245, 255, 0.1);
+        }
+
+        .library-tag-exercises {
+            padding: 0.375rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .library-exercise-item {
+            padding: 0.5rem 0.625rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            color: rgba(224, 224, 224, 0.85);
+            transition: all 0.15s;
+        }
+
+        .library-exercise-item:hover {
+            background: rgba(0, 245, 255, 0.12);
+            color: #00f5ff;
+        }
+
+        /* Autocomplete dropdown */
+        .autocomplete-dropdown {
+            position: fixed !important;
+            background: rgba(15, 15, 35, 0.98) !important;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 0.5rem;
+            z-index: 99999 !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        /* Fix exercise-box overflow for dropdowns inside */
+        .exercise-box.add-exercise-box {
+            overflow: visible;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Per-exercise dropdowns */
+        .exercise-dropdown-portal {
+            position: fixed !important;
+            background: rgba(15, 15, 35, 0.98);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 0.5rem;
+            z-index: 99999 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+            padding: 0.75rem;
+            min-width: 220px;
         }
     </style>
 </head>
@@ -253,30 +338,20 @@
                     <label class="text-sm font-bold mb-2" style="display: block;">Email</label>
                     <input type="email" id="loginEmail" placeholder="your@email.com">
                 </div>
-                
                 <div class="mb-4">
                     <label class="text-sm font-bold mb-2" style="display: block;">Password</label>
                     <input type="password" id="loginPassword" placeholder="••••••••">
                 </div>
-                
                 <button class="btn btn-primary" style="width: 100%;" id="loginBtn">Log In</button>
-                
                 <div style="display: flex; align-items: center; margin: 1.5rem 0;">
                     <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2);"></div>
                     <span style="padding: 0 1rem; color: rgba(224, 224, 224, 0.6); font-size: 0.875rem;">or</span>
                     <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2);"></div>
                 </div>
-                
                 <button class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem;" id="googleLoginBtn">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                        <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
-                        <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.039-3.71z" fill="#EA4335"/>
-                    </svg>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.039-3.71z" fill="#EA4335"/></svg>
                     Continue with Google
                 </button>
-                
                 <p class="text-center text-sm text-gray mt-4">
                     Don't have an account? <a href="#" id="showSignupLink" style="color: #3b82f6;">Sign up</a>
                 </p>
@@ -287,35 +362,24 @@
                     <label class="text-sm font-bold mb-2" style="display: block;">Email</label>
                     <input type="email" id="signupEmail" placeholder="your@email.com">
                 </div>
-                
                 <div class="mb-4">
                     <label class="text-sm font-bold mb-2" style="display: block;">Password</label>
                     <input type="password" id="signupPassword" placeholder="••••••••">
                 </div>
-                
                 <div class="mb-4">
                     <label class="text-sm font-bold mb-2" style="display: block;">Confirm Password</label>
                     <input type="password" id="signupPasswordConfirm" placeholder="••••••••">
                 </div>
-                
                 <button class="btn btn-primary" style="width: 100%;" id="signupBtn">Sign Up</button>
-                
                 <div style="display: flex; align-items: center; margin: 1.5rem 0;">
                     <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2);"></div>
                     <span style="padding: 0 1rem; color: rgba(224, 224, 224, 0.6); font-size: 0.875rem;">or</span>
                     <div style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.2);"></div>
                 </div>
-                
                 <button class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.75rem;" id="googleSignupBtn">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
-                        <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
-                        <path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
-                        <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.039-3.71z" fill="#EA4335"/>
-                    </svg>
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/><path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.909-2.258c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/><path d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/><path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.039-3.71z" fill="#EA4335"/></svg>
                     Continue with Google
                 </button>
-                
                 <p class="text-center text-sm text-gray mt-4">
                     Already have an account? <a href="#" id="showLoginLink" style="color: #3b82f6;">Log in</a>
                 </p>
@@ -340,11 +404,9 @@
                 <button class="btn btn-secondary" id="historyBtn">Activity</button>
             </div>
         </div>
-        
         <h2 class="title-text mb-2" style="font-size: 1.25rem; color: rgba(0, 245, 255, 0.7);">Start Workout:</h2>
         <div id="workoutCategories"></div>
     </div>
-    
     
     <!-- Workout Screen -->
     <div id="workoutScreen" class="container hidden">
@@ -377,28 +439,23 @@
         </div>
         
         <div id="previousWorkouts" class="mb-4"></div>
-        
         <div id="exerciseList"></div>
         
-        <div class="exercise-box mb-4" style="position: relative; z-index: 10;">
+        <!-- Add Exercise Box -->
+        <div class="exercise-box add-exercise-box mb-4">
             <div class="mb-2">
                 <label class="text-sm font-bold">Add Exercise</label>
-                <div style="margin-top: 0.5rem; position: relative; z-index: 100;">
+                <div style="margin-top: 0.5rem; position: relative;">
                     <input type="text" id="customExercise" name="exercise-name-input" placeholder="Type to search or browse library..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                    
-                    <!-- Autocomplete dropdown -->
-                    <div id="exerciseAutocomplete" class="hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; max-height: 200px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);"></div>
+                    <!-- Autocomplete dropdown - positioned via JS -->
+                    <div id="exerciseAutocomplete" class="autocomplete-dropdown hidden"></div>
                 </div>
-                
-                <div class="flex gap-2" style="margin-top: 0.5rem; position: relative; z-index: 100;">
+                <div class="flex gap-2" style="margin-top: 0.5rem;">
                     <button class="btn btn-primary" id="addExerciseBtn" style="flex: 1;">Add Exercise</button>
                     <div style="position: relative; flex: 1;">
                         <button class="btn btn-secondary" id="libraryBtn" style="width: 100%;">Library ▼</button>
-                        
-                        <!-- Library dropdown -->
-                        <div id="libraryDropdown" class="hidden" style="position: absolute; top: 100%; right: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; min-width: 300px; max-width: 400px; max-height: 400px; overflow-y: auto; z-index: 1000; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); padding: 0.75rem;">
-                            <p class="text-xs text-gray">Loading your exercise library...</p>
-                        </div>
+                        <!-- Library dropdown - positioned via JS as fixed -->
+                        <div id="libraryDropdown" class="library-dropdown hidden"></div>
                     </div>
                 </div>
             </div>
@@ -434,7 +491,6 @@
         <div class="exercise-box mb-4">
             <h2 class="font-bold mb-4">Workout Categories</h2>
             <div id="categoryList"></div>
-            
             <div style="border-top: 1px solid #e2e8f0; margin-top: 1rem; padding-top: 1rem;">
                 <h3 class="font-bold mb-2">Add New Category</h3>
                 <div class="mb-2">
@@ -465,7 +521,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // Global variables
+        // ── Global state ──────────────────────────────────────────────
         let supabaseClient;
         let currentUser = null;
         let workoutCategories = [];
@@ -477,35 +533,29 @@
         let workoutInfoTimeout = null;
         let viewingMonth = new Date().getMonth();
         let viewingYear = new Date().getFullYear();
-        let customMetrics = []; // User's custom metrics library
-        let exercisePreferences = {}; // Per-exercise metric preferences
-        let exerciseLibrary = []; // User's exercise history
-        
-        // Default available metrics
+        let customMetrics = [];
+        let exercisePreferences = {};
+        let exerciseLibrary = []; // { exercise_name, tags: [] }
+
         const DEFAULT_METRICS = ['reps', 'weight', 'time', 'distance', 'speed', 'incline'];
-        
-        // Initialize
+
+        // Standard muscle-group tags (used for library organization)
+        const STANDARD_TAGS = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'];
+
+        // ── Init ──────────────────────────────────────────────────────
         async function init() {
-            console.log('Init starting...');
-            
             if (typeof window.supabase === 'undefined') {
-                console.error('Supabase library not loaded');
                 alert('Failed to load. Please refresh.');
                 return;
             }
-            
-            console.log('Supabase library loaded');
-            
+
             const SUPABASE_URL = 'https://avuskoyuupiechsqjyrw.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2dXNrb3l1dXBpZWNoc3FqeXJ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwNTcyMDgsImV4cCI6MjA4NjYzMzIwOH0.rfzlvPcIkB_noPBNemiU-yNagzGwLaYgHob9gu_-0ck';
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            
-            console.log('Setting up event listeners...');
+
             setupEventListeners();
-            console.log('Event listeners set up');
-            
+
             const { data: { session } } = await supabaseClient.auth.getSession();
-            
             if (session) {
                 currentUser = session.user;
                 await loadUserData();
@@ -514,115 +564,72 @@
                 showAuthScreen();
             }
         }
-        
+
         function setupEventListeners() {
-            console.log('setupEventListeners called');
-            
-            // Helper function to safely add listeners
-            const addListener = (id, event, handler) => {
+            const on = (id, ev, fn) => {
                 const el = document.getElementById(id);
-                if (el) {
-                    el.addEventListener(event, handler);
-                    console.log(`Added listener to ${id}`);
-                } else {
-                    console.warn(`Element ${id} not found`);
-                }
+                if (el) el.addEventListener(ev, fn);
             };
-            
-            // Auth listeners
-            addListener('loginBtn', 'click', handleLogin);
-            addListener('signupBtn', 'click', handleSignup);
-            addListener('googleLoginBtn', 'click', handleGoogleSignIn);
-            addListener('googleSignupBtn', 'click', handleGoogleSignIn);
-            addListener('logoutBtn', 'click', handleLogout);
-            
-            const showSignupLink = document.getElementById('showSignupLink');
-            if (showSignupLink) {
-                showSignupLink.addEventListener('click', (e) => { 
-                    console.log('Signup link clicked');
-                    e.preventDefault(); 
-                    showSignup(); 
-                });
-                console.log('Added listener to showSignupLink');
-            }
-            
-            const showLoginLink = document.getElementById('showLoginLink');
-            if (showLoginLink) {
-                showLoginLink.addEventListener('click', (e) => { 
-                    e.preventDefault(); 
-                    showLogin(); 
-                });
-                console.log('Added listener to showLoginLink');
-            }
-            
-            // App listeners
-            addListener('historyBtn', 'click', showHistory);
-            addListener('settingsBtn', 'click', showSettings);
-            addListener('backFromHistoryBtn', 'click', showHome);
-            addListener('backFromSettingsBtn', 'click', showHome);
-            addListener('addExerciseBtn', 'click', addCustomExercise);
-            addListener('cancelWorkoutBtn', 'click', cancelWorkout);
-            addListener('finishWorkoutBtn', 'click', finishWorkout);
-            addListener('timerDisplay', 'click', toggleTimer);
-            addListener('resetTimerBtn', 'click', resetTimer);
-            addListener('workoutDate', 'change', updateWorkoutDateTime);
-            addListener('workoutTime', 'change', updateWorkoutDateTime);
-            addListener('addCategoryBtn', 'click', addCategory);
-            addListener('importDataBtn', 'click', () => document.getElementById('importFile').click());
-            addListener('exportDataBtn', 'click', exportData);
-            addListener('backFromWorkoutBtn', 'click', showHome);
-            addListener('workoutHistoryBtn', 'click', showHistory);
-            addListener('workoutSettingsBtn', 'click', showSettings);
-            
-            const importFile = document.getElementById('importFile');
-            if (importFile) {
-                importFile.addEventListener('change', importData);
-            }
-            
-            console.log('All event listeners setup complete');
+
+            on('loginBtn', 'click', handleLogin);
+            on('signupBtn', 'click', handleSignup);
+            on('googleLoginBtn', 'click', handleGoogleSignIn);
+            on('googleSignupBtn', 'click', handleGoogleSignIn);
+            on('logoutBtn', 'click', handleLogout);
+            on('showSignupLink', 'click', e => { e.preventDefault(); showSignup(); });
+            on('showLoginLink', 'click', e => { e.preventDefault(); showLogin(); });
+
+            on('historyBtn', 'click', showHistory);
+            on('settingsBtn', 'click', showSettings);
+            on('backFromHistoryBtn', 'click', showHome);
+            on('backFromSettingsBtn', 'click', showHome);
+            on('addExerciseBtn', 'click', addCustomExercise);
+            on('cancelWorkoutBtn', 'click', cancelWorkout);
+            on('finishWorkoutBtn', 'click', finishWorkout);
+            on('timerDisplay', 'click', toggleTimer);
+            on('resetTimerBtn', 'click', resetTimer);
+            on('workoutDate', 'change', updateWorkoutDateTime);
+            on('workoutTime', 'change', updateWorkoutDateTime);
+            on('addCategoryBtn', 'click', addCategory);
+            on('importDataBtn', 'click', () => document.getElementById('importFile').click());
+            on('exportDataBtn', 'click', exportData);
+            on('backFromWorkoutBtn', 'click', showHome);
+            on('workoutHistoryBtn', 'click', showHistory);
+            on('workoutSettingsBtn', 'click', showSettings);
+            on('importFile', 'change', importData);
         }
-        
+
         async function loadUserData() {
             showLoadingScreen();
-            
-            // Load categories
+
             const { data: categories } = await supabaseClient
                 .from('workout_categories')
                 .select('*')
                 .eq('user_id', currentUser.id)
                 .order('created_at');
-            
+
             if (categories && categories.length > 0) {
                 workoutCategories = categories;
             } else {
-                // Create default categories
                 await createDefaultCategories();
             }
-            
-            // Load custom metrics
+
             const { data: metrics } = await supabaseClient
                 .from('custom_metrics')
                 .select('*')
                 .eq('user_id', currentUser.id);
-            
-            if (metrics) {
-                customMetrics = metrics.map(m => m.metric_name);
-            }
-            
-            // Load exercise preferences
+            if (metrics) customMetrics = metrics.map(m => m.metric_name);
+
             const { data: prefs } = await supabaseClient
                 .from('exercise_preferences')
                 .select('*')
                 .eq('user_id', currentUser.id);
-            
             if (prefs) {
                 exercisePreferences = {};
-                prefs.forEach(p => {
-                    exercisePreferences[p.exercise_name] = p.metrics;
-                });
+                prefs.forEach(p => { exercisePreferences[p.exercise_name] = p.metrics; });
             }
         }
-        
+
         async function createDefaultCategories() {
             const defaults = [
                 { name: 'Chest', color: '#3b82f6' },
@@ -632,181 +639,97 @@
                 { name: 'Arms', color: '#8b5cf6' },
                 { name: 'Cardio', color: '#06b6d4' }
             ];
-            
             for (const cat of defaults) {
                 const { data } = await supabaseClient
                     .from('workout_categories')
                     .insert({ user_id: currentUser.id, name: cat.name, color: cat.color })
-                    .select()
-                    .single();
-                    
+                    .select().single();
                 if (data) workoutCategories.push(data);
             }
         }
-        
-        // Auth functions
+
+        // ── Auth ──────────────────────────────────────────────────────
         function showLogin() {
-            console.log('showLogin called');
             document.getElementById('loginForm').classList.remove('hidden');
             document.getElementById('signupForm').classList.add('hidden');
             clearAuthError();
         }
-        
         function showSignup() {
-            console.log('showSignup called');
             document.getElementById('loginForm').classList.add('hidden');
             document.getElementById('signupForm').classList.remove('hidden');
             clearAuthError();
         }
-        
-        function showAuthError(message) {
-            const errorEl = document.getElementById('authError');
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
+        function showAuthError(msg) {
+            const el = document.getElementById('authError');
+            el.textContent = msg;
+            el.classList.remove('hidden');
         }
-        
-        function clearAuthError() {
-            document.getElementById('authError').classList.add('hidden');
-        }
-        
+        function clearAuthError() { document.getElementById('authError').classList.add('hidden'); }
+
         async function handleLogin() {
             const email = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
-            
-            if (!email || !password) {
-                showAuthError('Please enter email and password');
-                return;
-            }
-            
+            if (!email || !password) { showAuthError('Please enter email and password'); return; }
             const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            
-            if (error) {
-                showAuthError(error.message);
-            } else {
-                currentUser = data.user;
-                await loadUserData();
-                showHome();
-            }
+            if (error) { showAuthError(error.message); }
+            else { currentUser = data.user; await loadUserData(); showHome(); }
         }
-        
+
         async function handleSignup() {
-            console.log('handleSignup called');
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
             const passwordConfirm = document.getElementById('signupPasswordConfirm').value;
-            
-            console.log('Email:', email, 'Password length:', password.length);
-            
-            if (!email || !password) {
-                showAuthError('Please enter email and password');
-                return;
-            }
-            
-            if (password !== passwordConfirm) {
-                showAuthError('Passwords do not match');
-                return;
-            }
-            
-            if (password.length < 6) {
-                showAuthError('Password must be at least 6 characters');
-                return;
-            }
-            
-            console.log('Calling supabaseClient.auth.signUp...');
-            
+            if (!email || !password) { showAuthError('Please enter email and password'); return; }
+            if (password !== passwordConfirm) { showAuthError('Passwords do not match'); return; }
+            if (password.length < 6) { showAuthError('Password must be at least 6 characters'); return; }
             const { error } = await supabaseClient.auth.signUp({ email, password });
-            
-            console.log('Signup result:', error);
-            
-            if (error) {
-                showAuthError(error.message);
-            } else {
-                alert('Account created! Check your email to verify, then log in.');
-                showLogin();
-            }
+            if (error) { showAuthError(error.message); }
+            else { alert('Account created! Check your email to verify, then log in.'); showLogin(); }
         }
-        
+
         async function handleGoogleSignIn() {
-            const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            const { error } = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo: window.location.origin
-                }
+                options: { redirectTo: window.location.origin }
             });
-            
-            if (error) {
-                showAuthError(error.message);
-            }
-            // User will be redirected to Google, then back to the app
+            if (error) showAuthError(error.message);
         }
-        
+
         async function handleLogout() {
             await supabaseClient.auth.signOut();
             currentUser = null;
             workoutCategories = [];
             showAuthScreen();
         }
-        
-        // Screen management
-        function showAuthScreen() {
-            hideAllScreens();
-            document.getElementById('authScreen').classList.remove('hidden');
+
+        // ── Screen management ─────────────────────────────────────────
+        function hideAllScreens() {
+            ['authScreen','loadingScreen','homeScreen','workoutScreen','historyScreen','settingsScreen']
+                .forEach(id => document.getElementById(id).classList.add('hidden'));
         }
-        
-        function showLoadingScreen() {
-            hideAllScreens();
-            document.getElementById('loadingScreen').classList.remove('hidden');
-        }
-        
-        function showHome() {
-            hideAllScreens();
-            document.getElementById('homeScreen').classList.remove('hidden');
-            renderWorkoutCategories();
-        }
-        
-        function showWorkoutScreen() {
-            hideAllScreens();
-            document.getElementById('workoutScreen').classList.remove('hidden');
-        }
-        
+        function showAuthScreen() { hideAllScreens(); document.getElementById('authScreen').classList.remove('hidden'); }
+        function showLoadingScreen() { hideAllScreens(); document.getElementById('loadingScreen').classList.remove('hidden'); }
+        function showHome() { hideAllScreens(); document.getElementById('homeScreen').classList.remove('hidden'); renderWorkoutCategories(); }
+        function showWorkoutScreen() { hideAllScreens(); document.getElementById('workoutScreen').classList.remove('hidden'); }
+
         async function showHistory(filterDate = null, keepMonth = false) {
-            // Ignore if filterDate is an event object
-            if (filterDate && typeof filterDate === 'object' && filterDate.target) {
-                filterDate = null;
-            }
-            
+            if (filterDate && typeof filterDate === 'object' && filterDate.target) filterDate = null;
             hideAllScreens();
             document.getElementById('historyScreen').classList.remove('hidden');
-            
-            // Only reset viewing month on first open, not when navigating
-            if (!keepMonth) {
-                viewingMonth = new Date().getMonth();
-                viewingYear = new Date().getFullYear();
-            }
-            
+            if (!keepMonth) { viewingMonth = new Date().getMonth(); viewingYear = new Date().getFullYear(); }
             await renderHistory(filterDate);
         }
-        
+
         function showSettings() {
             hideAllScreens();
             document.getElementById('settingsScreen').classList.remove('hidden');
             renderSettings();
         }
-        
-        function hideAllScreens() {
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('loadingScreen').classList.add('hidden');
-            document.getElementById('homeScreen').classList.add('hidden');
-            document.getElementById('workoutScreen').classList.add('hidden');
-            document.getElementById('historyScreen').classList.add('hidden');
-            document.getElementById('settingsScreen').classList.add('hidden');
-        }
-        
-        // Workout Categories
+
+        // ── Workout Categories ────────────────────────────────────────
         function renderWorkoutCategories() {
             const container = document.getElementById('workoutCategories');
             container.innerHTML = '';
-            
             workoutCategories.forEach(cat => {
                 const card = document.createElement('div');
                 card.className = 'workout-card';
@@ -815,141 +738,104 @@
                     <div class="flex gap-2" style="align-items: center;">
                         <span class="color-dot" style="background: ${cat.color};"></span>
                         <h2 class="font-bold" style="font-size: 1.25rem; font-family: 'Space Grotesk', sans-serif;">${cat.name}</h2>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(card);
             });
         }
-        
-        // Start Workout
+
+        // ── Start Workout ─────────────────────────────────────────────
         function startWorkout(category) {
-            // Check for existing draft
             const draft = loadDraft();
-            
             if (draft && draft.categoryId === category.id) {
                 if (confirm('Resume your draft workout?')) {
                     currentWorkout = category;
                     exercises = draft.exercises;
                     workoutStartTime = new Date(draft.startTime);
-                    
                     document.getElementById('workoutDate').value = draft.date;
                     document.getElementById('workoutTime').value = draft.time;
                     document.getElementById('workoutNotes').value = draft.notes || '';
-                    
                     document.getElementById('workoutColorDot').style.background = category.color;
                     document.getElementById('workoutTitle').textContent = category.name;
-                    
                     updateWorkoutInfo();
                     renderPreviousWorkouts();
                     renderExercises();
                     showWorkoutScreen();
+                    setupExerciseAutocomplete();
                     return;
                 }
             }
-            
-            // Start fresh workout
+
             currentWorkout = category;
             exercises = [];
             workoutStartTime = new Date();
-            
             const now = new Date();
             document.getElementById('workoutDate').value = now.toISOString().split('T')[0];
             document.getElementById('workoutTime').value = now.toTimeString().slice(0, 5);
             document.getElementById('workoutNotes').value = '';
-            
             document.getElementById('workoutColorDot').style.background = category.color;
             document.getElementById('workoutTitle').textContent = category.name;
-            
             updateWorkoutInfo();
             renderPreviousWorkouts();
             renderExercises();
             showWorkoutScreen();
-            
-            // Setup exercise autocomplete and library
             setupExerciseAutocomplete();
-            
-            // Save initial draft
             saveDraft();
         }
-        
+
         function updateWorkoutDateTime() {
             const dateStr = document.getElementById('workoutDate').value;
             const timeStr = document.getElementById('workoutTime').value;
-            
-            if (dateStr && timeStr) {
-                workoutStartTime = new Date(`${dateStr}T${timeStr}`);
-                updateWorkoutInfo();
-            }
+            if (dateStr && timeStr) { workoutStartTime = new Date(`${dateStr}T${timeStr}`); updateWorkoutInfo(); }
         }
-        
+
         function updateWorkoutInfo() {
-            if (workoutInfoTimeout) {
-                clearTimeout(workoutInfoTimeout);
-                workoutInfoTimeout = null;
-            }
-            
+            if (workoutInfoTimeout) { clearTimeout(workoutInfoTimeout); workoutInfoTimeout = null; }
             const now = new Date();
             const timeDiff = now - workoutStartTime;
             const hoursDiff = timeDiff / (1000 * 60 * 60);
             const isRecent = hoursDiff >= 0 && hoursDiff < 6;
-            
             if (isRecent) {
                 const duration = Math.floor(timeDiff / 60000);
-                document.getElementById('workoutInfo').textContent = 
+                document.getElementById('workoutInfo').textContent =
                     `${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} • ${duration} min`;
                 workoutInfoTimeout = setTimeout(updateWorkoutInfo, 30000);
             } else {
-                document.getElementById('workoutInfo').textContent = 
+                document.getElementById('workoutInfo').textContent =
                     `${workoutStartTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${workoutStartTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
             }
         }
-        
+
         async function renderPreviousWorkouts() {
             const container = document.getElementById('previousWorkouts');
-            
-            if (!currentWorkout) {
-                container.innerHTML = '';
-                return;
-            }
-            
+            if (!currentWorkout) { container.innerHTML = ''; return; }
+
             const { data: workouts } = await supabaseClient
                 .from('workouts')
-                .select(`
-                    *,
-                    exercises (
-                        *,
-                        sets (*)
-                    )
-                `)
+                .select('*, exercises(*, sets(*))')
                 .eq('user_id', currentUser.id)
                 .eq('type', currentWorkout.name)
                 .order('start_time', { ascending: false })
                 .limit(3);
-            
-            if (!workouts || workouts.length === 0) {
-                container.innerHTML = '';
-                return;
-            }
-            
+
+            if (!workouts || workouts.length === 0) { container.innerHTML = ''; return; }
+
             container.innerHTML = '<div class="exercise-box"><h3 class="font-bold mb-2">Previous Workouts</h3></div>';
             const boxDiv = container.querySelector('.exercise-box');
-            
+
             workouts.forEach(workout => {
                 const start = new Date(workout.start_time);
                 const end = new Date(workout.end_time);
                 const duration = Math.floor((end - start) / 60000);
-                
                 const workoutDiv = document.createElement('div');
                 workoutDiv.style.cssText = 'border: 1px solid rgba(0, 245, 255, 0.2); padding: 0.75rem; margin-top: 0.75rem; border-radius: 0.5rem; background: rgba(255, 255, 255, 0.05);';
                 workoutDiv.innerHTML = `
                     <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
                         <p class="text-sm font-bold">${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                        <p class="text-xs text-gray">${duration} min • ${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</p>
+                        <p class="text-xs text-gray">${duration} min • ${workout.exercises.reduce((s, ex) => s + ex.sets.length, 0)} sets</p>
                     </div>
                     <div class="text-sm">
                         ${workout.exercises.map(ex => {
-                            const isCardio = currentWorkout.name === 'Cardio';
-                            if (isCardio) {
+                            if (currentWorkout.name === 'Cardio') {
                                 const details = ex.sets.map(s => {
                                     const parts = [];
                                     if (s.time) parts.push(`${s.time} min`);
@@ -969,39 +855,28 @@
                                 return `<div style="margin-bottom: 0.25rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
                             }
                         }).join('')}
-                    </div>
-                `;
+                    </div>`;
                 boxDiv.appendChild(workoutDiv);
             });
         }
-        
-        // Exercise Management
+
+        // ── Exercise Management ───────────────────────────────────────
         function addCustomExercise() {
             const input = document.getElementById('customExercise');
-            if (input.value.trim()) {
-                addExercise(input.value.trim());
-                input.value = '';
-            }
+            if (input.value.trim()) { addExercise(input.value.trim()); input.value = ''; }
         }
-        
+
         function addExercise(name) {
-            // Load category default metrics (remembers what you used last time for this workout type)
             const categoryKey = `categoryMetrics_${currentWorkout.name}`;
             const savedCategoryMetrics = localStorage.getItem(categoryKey);
-            
             let defaultMetrics = ['reps', 'weight'];
-            if (currentWorkout.name === 'Cardio') {
-                defaultMetrics = ['time', 'distance', 'speed', 'incline'];
-            } else if (savedCategoryMetrics) {
-                defaultMetrics = JSON.parse(savedCategoryMetrics);
-            }
-            
-            // Exercise-specific preferences override category defaults
+            if (currentWorkout.name === 'Cardio') defaultMetrics = ['time', 'distance', 'speed', 'incline'];
+            else if (savedCategoryMetrics) defaultMetrics = JSON.parse(savedCategoryMetrics);
+
             const savedMetrics = exercisePreferences[name] || defaultMetrics;
-            
             const exercise = {
                 id: Date.now(),
-                name: name,
+                name,
                 metrics: savedMetrics,
                 sets: [createEmptySet(savedMetrics)],
                 notes: '',
@@ -1009,158 +884,82 @@
             };
             exercises.push(exercise);
             renderExercises();
-            saveDraft(); // Auto-save
+            saveDraft();
         }
-        
+
         function createEmptySet(metrics) {
             const set = {};
-            metrics.forEach(metric => {
-                set[metric] = '';
-            });
+            metrics.forEach(m => { set[m] = ''; });
             return set;
         }
-        
+
         function renderExercises() {
             const container = document.getElementById('exerciseList');
             container.innerHTML = '';
-            
+
             exercises.forEach(ex => {
                 const div = document.createElement('div');
                 div.className = 'exercise-box';
-                
+
                 let setsHTML = '';
                 ex.sets.forEach((set, idx) => {
                     const fields = ex.metrics.map(metric => {
                         const label = metric.charAt(0).toUpperCase() + metric.slice(1);
-                        return `
-                            <div>
-                                <label class="text-xs text-gray">${label}</label>
-                                <input type="number" step="0.1" placeholder="${label}" value="${set[metric] || ''}" onchange="updateSet(${ex.id}, ${idx}, '${metric}', this.value)" style="flex: 1;">
-                            </div>
-                        `;
+                        return `<div>
+                            <label class="text-xs text-gray">${label}</label>
+                            <input type="number" step="0.1" placeholder="${label}" value="${set[metric] || ''}" onchange="updateSet(${ex.id}, ${idx}, '${metric}', this.value)" style="flex: 1;">
+                        </div>`;
                     }).join('');
-                    
                     setsHTML += `
                         <div style="background: rgba(255, 255, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-bottom: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.1);">
-                            <div class="grid-2 mb-2">
-                                ${fields}
-                            </div>
-                        </div>
-                    `;
+                            <div class="grid-2 mb-2">${fields}</div>
+                        </div>`;
                 });
-                
-                // Generate tag pills
-                const tagPills = (ex.tags || []).map(tag => 
+
+                const tagPills = (ex.tags || []).map(tag =>
                     `<span style="background: rgba(0, 245, 255, 0.2); color: #00f5ff; padding: 0.125rem 0.5rem; border-radius: 0.75rem; font-size: 0.75rem; margin-right: 0.25rem;">${tag}</span>`
                 ).join('');
-                
+
                 const isCollapsed = ex.collapsed || false;
-                
+
                 div.innerHTML = `
                     <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
-                        <div class="flex gap-2" style="align-items: center; flex: 1;">
-                            <button onclick="toggleExerciseCollapse(${ex.id})" style="background: none; border: none; color: rgba(224, 224, 224, 0.6); cursor: pointer; font-size: 1rem; padding: 0.25rem;">
-                                ${isCollapsed ? '▶' : '▼'}
-                            </button>
-                            <h3 class="font-bold" style="flex-shrink: 0;">${ex.name}</h3>
+                        <div class="flex gap-2" style="align-items: center; flex: 1; flex-wrap: wrap;">
+                            <button onclick="toggleExerciseCollapse(${ex.id})" style="background: none; border: none; color: rgba(224, 224, 224, 0.6); cursor: pointer; font-size: 1rem; padding: 0.25rem;">${isCollapsed ? '▶' : '▼'}</button>
+                            <h3 class="font-bold">${ex.name}</h3>
                             
                             <!-- Tags button -->
                             <div style="position: relative; flex-shrink: 0;">
-                                <button onclick="toggleTagsDropdown(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.25rem;">
-                                    ${tagPills || 'Tags'} ${tagPills ? '' : '▼'}
+                                <button onclick="toggleTagsDropdown(${ex.id}, this)" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                                    ${tagPills || 'Tags ▼'}
                                 </button>
-                                <div id="tags-dropdown-${ex.id}" class="hidden" style="position: absolute; top: 100%; left: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; padding: 0.75rem; min-width: 220px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
-                                    <p class="text-xs font-bold mb-2">Select Tags:</p>
-                                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-                                        ${['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].map(tag => {
-                                            const isSelected = (ex.tags || []).includes(tag);
-                                            return `
-                                                <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}" onmouseover="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.1)'" onmouseout="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.05)'">
-                                                    ${tag}
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                        ${(ex.tags || []).filter(tag => !['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Legs', 'Core', 'Cardio'].includes(tag)).map(tag => {
-                                            return `
-                                                <div style="display: flex; gap: 0.25rem; align-items: center;">
-                                                    <div onclick="toggleExerciseTag(${ex.id}, '${tag}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">
-                                                        ${tag}
-                                                    </div>
-                                                    <button onclick="event.stopPropagation(); removeCustomTagFromExercise(${ex.id}, '${tag}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; flex-shrink: 0;">×</button>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <input type="text" id="custom-tag-${ex.id}" placeholder="Custom tag..." style="flex: 1; font-size: 0.875rem; padding: 0.375rem;">
-                                        <button class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="addCustomTag(${ex.id})">Add</button>
-                                    </div>
-                                </div>
                             </div>
                             
                             <!-- Metrics button -->
                             <div style="position: relative; flex-shrink: 0;">
-                                <button onclick="showMetricsEditor(${ex.id})" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
+                                <button onclick="showMetricsEditor(${ex.id}, this)" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.75rem; cursor: pointer;">
                                     Metrics ▼
                                 </button>
-                                <div id="metrics-editor-${ex.id}" class="hidden" style="position: absolute; top: 100%; left: 0; background: rgba(26, 26, 46, 0.98); border: 1px solid rgba(0, 245, 255, 0.3); border-radius: 0.5rem; margin-top: 0.25rem; padding: 0.75rem; min-width: 220px; z-index: 100; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);">
-                                    <p class="text-xs font-bold mb-2">Select Metrics to Track:</p>
-                                    <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-                                        ${DEFAULT_METRICS.map(metric => {
-                                            const isSelected = ex.metrics.includes(metric);
-                                            const label = metric.charAt(0).toUpperCase() + metric.slice(1);
-                                            return `
-                                                <div onclick="toggleMetric(${ex.id}, '${metric}')" style="padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}" onmouseover="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.1)'" onmouseout="if (!${isSelected}) this.style.background='rgba(255, 255, 255, 0.05)'">
-                                                    ${label}
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                        ${customMetrics.map(metric => {
-                                            const isSelected = ex.metrics.includes(metric);
-                                            const label = metric.charAt(0).toUpperCase() + metric.slice(1);
-                                            return `
-                                                <div style="display: flex; gap: 0.25rem; align-items: center;">
-                                                    <div onclick="toggleMetric(${ex.id}, '${metric}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">
-                                                        ${label}
-                                                    </div>
-                                                    <button onclick="event.stopPropagation(); deleteCustomMetric('${metric}', ${ex.id})" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer; flex-shrink: 0;">×</button>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <input type="text" id="custom-metric-${ex.id}" placeholder="Custom metric..." style="flex: 1; font-size: 0.875rem; padding: 0.375rem;">
-                                        <button class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="addCustomMetric(${ex.id})">Add</button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="removeExercise(${ex.id})">✕</button>
-                        </div>
+                        <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; flex-shrink: 0;" onclick="removeExercise(${ex.id})">✕</button>
                     </div>
                     
                     <div id="exercise-content-${ex.id}" ${isCollapsed ? 'class="hidden"' : ''}>
                         ${setsHTML}
+                        <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">+ Add Set</button>
                         
-                        <button class="btn btn-secondary" style="width: 100%; margin-top: 0.5rem;" onclick="addSet(${ex.id})">
-                            + Add Set
-                        </button>
-                        
-                        <!-- Last Workout Info (moved below Add Set button) -->
                         <div id="last-workout-${ex.id}" class="hidden" style="background: rgba(0, 245, 255, 0.05); padding: 0.75rem; border-radius: 0.5rem; margin-top: 0.5rem; border: 1px solid rgba(0, 245, 255, 0.2);">
                             <p class="text-xs font-bold mb-1">Last time:</p>
                             <p id="last-workout-details-${ex.id}" class="text-xs text-gray"></p>
                         </div>
                         
-                        <!-- Exercise Notes -->
                         <div style="margin-top: 0.5rem;">
                             <label class="text-xs text-gray">Exercise Notes (optional)</label>
                             <textarea id="exercise-notes-${ex.id}" rows="2" placeholder="How did this feel? Any form notes..." style="margin-top: 0.25rem;" onchange="updateExerciseNotes(${ex.id}, this.value)">${ex.notes || ''}</textarea>
                         </div>
                         
-                        <!-- Exercise History -->
-                        <div id="history-${ex.id}" style="margin-top: 0.5rem;">
+                        <div style="margin-top: 0.5rem;">
                             <button onclick="toggleExerciseHistory(${ex.id}, '${ex.name.replace(/'/g, "\\'")}')" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: rgba(224, 224, 224, 0.6); padding: 0.375rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; cursor: pointer; width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center;">
                                 <span>Exercise History</span>
                                 <span id="history-arrow-${ex.id}">▼</span>
@@ -1169,416 +968,497 @@
                                 <p class="text-xs text-gray">Loading history...</p>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 container.appendChild(div);
             });
-            
-            // Load exercise history for each exercise
-            exercises.forEach(ex => {
-                loadExerciseHistory(ex.id, ex.name);
+        }
+
+        // ── Dropdown positioning helper (fixes clipping) ──────────────
+        // Positions a dropdown as fixed, anchored below a button
+        function positionDropdown(dropdown, anchorEl, opts = {}) {
+            const rect = anchorEl.getBoundingClientRect();
+            const winH = window.innerHeight;
+            const winW = window.innerWidth;
+
+            const dropH = opts.maxHeight || 320;
+            const dropW = opts.width || 280;
+
+            // Decide if it opens below or above
+            const spaceBelow = winH - rect.bottom;
+            const openAbove = spaceBelow < dropH + 16 && rect.top > dropH + 16;
+
+            dropdown.style.width = Math.min(dropW, winW - 24) + 'px';
+            dropdown.style.maxHeight = Math.min(dropH, openAbove ? rect.top - 16 : spaceBelow - 16) + 'px';
+            dropdown.style.overflowY = 'auto';
+            dropdown.style.left = Math.max(8, Math.min(rect.left, winW - dropW - 8)) + 'px';
+
+            if (openAbove) {
+                dropdown.style.bottom = (winH - rect.top + 4) + 'px';
+                dropdown.style.top = 'auto';
+            } else {
+                dropdown.style.top = (rect.bottom + 4) + 'px';
+                dropdown.style.bottom = 'auto';
+            }
+        }
+
+        // ── Exercise autocomplete & Library ───────────────────────────
+        async function setupExerciseAutocomplete() {
+            const input = document.getElementById('customExercise');
+            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
+            const libraryBtn = document.getElementById('libraryBtn');
+            const libraryDropdown = document.getElementById('libraryDropdown');
+
+            if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) return;
+
+            // Load exercise history + tags from past workouts
+            const { data: workoutsData } = await supabaseClient
+                .from('workouts')
+                .select('exercises(name, notes)')
+                .eq('user_id', currentUser.id);
+
+            // Also load exercise_preferences to get stored tags if any
+            const { data: prefsData } = await supabaseClient
+                .from('exercise_preferences')
+                .select('exercise_name, metrics')
+                .eq('user_id', currentUser.id);
+
+            // Build a map of exercise_name -> tags from exercises' stored tags in drafts
+            // We'll also look at exercise tags stored in sets/exercises table if available
+            // For now, pull tag data from the local exercises array (current session) + localStorage
+            const exerciseTagMap = {};
+
+            // Try to load saved exercise tags from localStorage
+            try {
+                const savedTags = JSON.parse(localStorage.getItem('exerciseTags') || '{}');
+                Object.assign(exerciseTagMap, savedTags);
+            } catch(e) {}
+
+            const exerciseSet = new Set();
+            if (workoutsData) {
+                workoutsData.forEach(w => {
+                    if (w.exercises) {
+                        w.exercises.forEach(ex => {
+                            if (ex.name) exerciseSet.add(ex.name);
+                        });
+                    }
+                });
+            }
+
+            exerciseLibrary = Array.from(exerciseSet).map(name => ({
+                exercise_name: name,
+                tags: exerciseTagMap[name] || []
+            }));
+
+            // Re-clone elements to clear old listeners
+            const newInput = input.cloneNode(true);
+            input.parentNode.replaceChild(newInput, input);
+            const finalInput = document.getElementById('customExercise');
+
+            const newLibraryBtn = libraryBtn.cloneNode(true);
+            libraryBtn.parentNode.replaceChild(newLibraryBtn, libraryBtn);
+            const finalLibraryBtn = document.getElementById('libraryBtn');
+
+            // Autocomplete on input
+            finalInput.addEventListener('input', function() {
+                const value = this.value.trim().toLowerCase();
+                if (!value) { autocompleteDropdown.classList.add('hidden'); return; }
+
+                const matches = exerciseLibrary
+                    .filter(ex => ex.exercise_name.toLowerCase().includes(value))
+                    .slice(0, 8);
+
+                if (matches.length > 0) {
+                    autocompleteDropdown.innerHTML = matches.map(ex => `
+                        <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);"
+                             onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
+                             onmouseout="this.style.background='transparent'"
+                             onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')">
+                            <div class="text-sm font-bold">${ex.exercise_name}</div>
+                            ${ex.tags && ex.tags.length ? `<div class="text-xs text-gray">${ex.tags.join(' · ')}</div>` : ''}
+                        </div>`).join('');
+                    autocompleteDropdown.classList.remove('hidden');
+                    positionDropdown(autocompleteDropdown, finalInput, { width: finalInput.offsetWidth, maxHeight: 220 });
+                } else {
+                    autocompleteDropdown.classList.add('hidden');
+                }
+            });
+
+            // Library button
+            finalLibraryBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const isHidden = libraryDropdown.classList.contains('hidden');
+                autocompleteDropdown.classList.add('hidden');
+
+                if (isHidden) {
+                    renderLibraryDropdown();
+                    libraryDropdown.classList.remove('hidden');
+                    positionDropdown(libraryDropdown, finalLibraryBtn, { width: 320, maxHeight: 400 });
+                } else {
+                    libraryDropdown.classList.add('hidden');
+                }
+            });
+
+            // Close on outside click
+            document.addEventListener('click', function closeDropdowns(e) {
+                if (!finalInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                    autocompleteDropdown.classList.add('hidden');
+                }
+                if (!finalLibraryBtn.contains(e.target) && !libraryDropdown.contains(e.target)) {
+                    libraryDropdown.classList.add('hidden');
+                }
             });
         }
-        
-        async function loadExerciseHistory(exerciseId, exerciseName) {
-            const historyContainer = document.getElementById(`history-${exerciseId}`);
-            if (!historyContainer) return;
-            
-            // Query past workouts with this exercise
-            const { data: pastExercises } = await supabaseClient
-                .from('exercises')
-                .select(`
-                    *,
-                    workout:workouts!inner(start_time, notes),
-                    sets(*)
-                `)
-                .eq('workout.user_id', currentUser.id)
-                .ilike('name', exerciseName)
-                .order('workout.start_time', { ascending: false })
-                .limit(3);
-            
-            if (!pastExercises || pastExercises.length === 0) {
-                historyContainer.innerHTML = '';
+
+        // ── Render Library organised by muscle group tags ─────────────
+        function renderLibraryDropdown() {
+            const libraryDropdown = document.getElementById('libraryDropdown');
+
+            if (exerciseLibrary.length === 0) {
+                libraryDropdown.innerHTML = `<p class="text-xs text-gray" style="padding: 1rem;">No exercises yet. Add some workouts first!</p>`;
                 return;
             }
-            
-            const isExpanded = false; // Start collapsed
-            
-            historyContainer.innerHTML = `
-                <div style="border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.5rem;">
-                    <button onclick="toggleExerciseHistory(${exerciseId})" style="background: none; border: none; color: rgba(0, 245, 255, 0.7); cursor: pointer; font-size: 0.75rem; padding: 0.25rem 0; display: flex; align-items: center; gap: 0.25rem;">
-                        <span id="history-arrow-${exerciseId}">${isExpanded ? '▼' : '▶'}</span>
-                        <span>Last ${pastExercises.length} time${pastExercises.length > 1 ? 's' : ''}</span>
-                    </button>
-                    <div id="history-content-${exerciseId}" class="${isExpanded ? '' : 'hidden'}" style="margin-top: 0.5rem;">
-                        ${pastExercises.map(ex => {
-                            const date = new Date(ex.workout.start_time);
-                            const setDetails = ex.sets.map(s => {
-                                const parts = [];
-                                if (s.reps) parts.push(`${s.reps} reps`);
-                                if (s.weight) parts.push(`${s.weight} lbs`);
-                                if (s.time) parts.push(`${s.time} min`);
-                                if (s.distance) parts.push(`${s.distance} mi`);
-                                return parts.join(' @ ');
-                            }).filter(Boolean).join(', ');
-                            
-                            return `
-                                <div style="background: rgba(255, 255, 255, 0.03); padding: 0.5rem; border-radius: 0.375rem; margin-bottom: 0.5rem; border: 1px solid rgba(255, 255, 255, 0.05);">
-                                    <p class="text-xs font-bold" style="color: rgba(0, 245, 255, 0.8);">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                                    <p class="text-xs text-gray" style="margin-top: 0.25rem;">${setDetails || 'No data'}</p>
-                                    ${ex.workout.notes ? `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.workout.notes}"</p>` : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            `;
-        }
-        
-        window.updateSet = function(exerciseId, setIndex, field, value) {
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (exercise && exercise.sets[setIndex]) {
-                exercise.sets[setIndex][field] = value;
-                saveDraft(); // Auto-save
-            }
-        };
-        
-        window.addSet = function(exerciseId) {
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (exercise) {
-                exercise.sets.push(createEmptySet(exercise.metrics));
-                renderExercises();
-                saveDraft(); // Auto-save
-            }
-        };
-        
-        window.removeExercise = function(exerciseId) {
-            exercises = exercises.filter(ex => ex.id !== exerciseId);
-            renderExercises();
-            saveDraft(); // Auto-save
-        };
-        
-        window.showMetricsEditor = function(exerciseId) {
-            const editor = document.getElementById(`metrics-editor-${exerciseId}`);
-            editor.classList.toggle('hidden');
-            
-            // Close other dropdowns
-            exercises.forEach(ex => {
-                if (ex.id !== exerciseId) {
-                    const other = document.getElementById(`metrics-editor-${ex.id}`);
-                    if (other) other.classList.add('hidden');
+
+            // Group exercises by tag
+            const tagGroups = {};  // tag -> [exercise_name]
+            const untagged = [];
+
+            exerciseLibrary.forEach(ex => {
+                if (!ex.tags || ex.tags.length === 0) {
+                    untagged.push(ex.exercise_name);
+                } else {
+                    ex.tags.forEach(tag => {
+                        if (!tagGroups[tag]) tagGroups[tag] = [];
+                        tagGroups[tag].push(ex.exercise_name);
+                    });
                 }
             });
-            
-            // Also close tags dropdowns
-            exercises.forEach(ex => {
-                const tagsDropdown = document.getElementById(`tags-dropdown-${ex.id}`);
-                if (tagsDropdown) tagsDropdown.classList.add('hidden');
+
+            // Build ordered tag list: standard tags first, then custom
+            const orderedTags = [
+                ...STANDARD_TAGS.filter(t => tagGroups[t]),
+                ...Object.keys(tagGroups).filter(t => !STANDARD_TAGS.includes(t)).sort()
+            ];
+
+            let html = '';
+
+            // Tagged groups
+            orderedTags.forEach(tag => {
+                const exNames = [...new Set(tagGroups[tag])].sort();
+                const groupId = `lib-group-${tag.replace(/\s+/g, '-')}`;
+                html += `
+                    <div class="library-tag-group">
+                        <div class="library-tag-header" onclick="toggleLibraryGroup('${groupId}')">
+                            <span>${tag}</span>
+                            <span id="${groupId}-arrow">▼</span>
+                        </div>
+                        <div id="${groupId}" class="library-tag-exercises">
+                            ${exNames.map(name => `
+                                <div class="library-exercise-item" onclick="selectExerciseFromLibrary('${name.replace(/'/g, "\\'")}')">
+                                    ${name}
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
             });
-        };
-        
-        window.closeMetricsEditor = async function(exerciseId) {
-            const editor = document.getElementById(`metrics-editor-${exerciseId}`);
-            editor.classList.add('hidden');
-            
-            // Save preference for this exercise name to Supabase
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (exercise && exercise.metrics.length > 0) {
-                // Update local state
-                exercisePreferences[exercise.name] = exercise.metrics;
-                
-                // Save to Supabase (upsert)
-                await supabaseClient
-                    .from('exercise_preferences')
-                    .upsert({
-                        user_id: currentUser.id,
-                        exercise_name: exercise.name,
-                        metrics: exercise.metrics,
-                        updated_at: new Date().toISOString()
-                    }, {
-                        onConflict: 'user_id,exercise_name'
-                    });
+
+            // Untagged / All section
+            if (untagged.length > 0) {
+                const sorted = [...new Set(untagged)].sort();
+                const groupId = 'lib-group-untagged';
+                html += `
+                    <div class="library-tag-group">
+                        <div class="library-tag-header" onclick="toggleLibraryGroup('${groupId}')" style="color: rgba(224, 224, 224, 0.5);">
+                            <span>Untagged</span>
+                            <span id="${groupId}-arrow">▼</span>
+                        </div>
+                        <div id="${groupId}" class="library-tag-exercises">
+                            ${sorted.map(name => `
+                                <div class="library-exercise-item" onclick="selectExerciseFromLibrary('${name.replace(/'/g, "\\'")}')">
+                                    ${name}
+                                </div>`).join('')}
+                        </div>
+                    </div>`;
             }
+
+            libraryDropdown.innerHTML = html;
+        }
+
+        window.toggleLibraryGroup = function(groupId) {
+            const group = document.getElementById(groupId);
+            const arrow = document.getElementById(`${groupId}-arrow`);
+            if (!group) return;
+            const isHidden = group.classList.contains('hidden');
+            group.classList.toggle('hidden');
+            if (arrow) arrow.textContent = isHidden ? '▼' : '▶';
         };
-        
-        window.toggleMetric = function(exerciseId, metric) {
+
+        window.selectExerciseFromLibrary = function(exerciseName) {
+            const input = document.getElementById('customExercise');
+            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
+            const libraryDropdown = document.getElementById('libraryDropdown');
+            addExercise(exerciseName);
+            if (input) input.value = '';
+            autocompleteDropdown.classList.add('hidden');
+            libraryDropdown.classList.add('hidden');
+        };
+
+        // ── Per-exercise dropdowns (metrics & tags) via fixed portal ──
+        let activePortal = null;
+
+        function closePortal() {
+            if (activePortal) {
+                activePortal.remove();
+                activePortal = null;
+            }
+        }
+
+        function createPortalDropdown(content, anchorBtn, opts = {}) {
+            closePortal();
+            const portal = document.createElement('div');
+            portal.className = 'exercise-dropdown-portal';
+            portal.innerHTML = content;
+            document.body.appendChild(portal);
+            activePortal = portal;
+            positionDropdown(portal, anchorBtn, { width: opts.width || 240, maxHeight: opts.maxHeight || 300 });
+            return portal;
+        }
+
+        document.addEventListener('click', function(e) {
+            if (activePortal && !activePortal.contains(e.target) && !e.target.closest('[data-portal-trigger]')) {
+                closePortal();
+            }
+            // Close library/autocomplete if clicking elsewhere
+            const lib = document.getElementById('libraryDropdown');
+            const auto = document.getElementById('exerciseAutocomplete');
+            if (lib && !lib.contains(e.target) && !e.target.closest('#libraryBtn')) lib.classList.add('hidden');
+            if (auto && !auto.contains(e.target) && !e.target.closest('#customExercise')) auto.classList.add('hidden');
+        });
+
+        window.showMetricsEditor = function(exerciseId, anchorBtn) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (!exercise) return;
-            
-            const index = exercise.metrics.indexOf(metric);
-            if (index > -1) {
-                // Remove metric
-                exercise.metrics.splice(index, 1);
+
+            const buildContent = () => {
+                const defaultMetricsHTML = DEFAULT_METRICS.map(metric => {
+                    const isSelected = exercise.metrics.includes(metric);
+                    const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                    return `<div onclick="toggleMetricPortal(${exerciseId}, '${metric}')" 
+                                 style="padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; margin-bottom: 0.25rem; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}">
+                                ${label}
+                            </div>`;
+                }).join('');
+
+                const customMetricsHTML = customMetrics.map(metric => {
+                    const isSelected = exercise.metrics.includes(metric);
+                    const label = metric.charAt(0).toUpperCase() + metric.slice(1);
+                    return `<div style="display: flex; gap: 0.25rem; align-items: center; margin-bottom: 0.25rem;">
+                                <div onclick="toggleMetricPortal(${exerciseId}, '${metric}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}">${label}</div>
+                                <button onclick="event.stopPropagation(); deleteCustomMetric('${metric}', ${exerciseId})" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">×</button>
+                            </div>`;
+                }).join('');
+
+                return `<p class="text-xs font-bold mb-2">Select Metrics:</p>
+                        <div style="max-height: 180px; overflow-y: auto; margin-bottom: 0.5rem;">
+                            ${defaultMetricsHTML}${customMetricsHTML}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="portal-custom-metric-${exerciseId}" placeholder="Custom metric..." style="flex: 1; font-size: 0.875rem; padding: 0.375rem;" onclick="event.stopPropagation()">
+                            <button class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="event.stopPropagation(); addCustomMetricPortal(${exerciseId})">Add</button>
+                        </div>`;
+            };
+
+            anchorBtn.dataset.portalTrigger = '1';
+            const portal = createPortalDropdown(buildContent(), anchorBtn, { width: 240, maxHeight: 320 });
+            portal.dataset.exerciseId = exerciseId;
+            portal.dataset.portalType = 'metrics';
+        };
+
+        window.toggleMetricPortal = function(exerciseId, metric) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            const idx = exercise.metrics.indexOf(metric);
+            if (idx > -1) {
+                exercise.metrics.splice(idx, 1);
+                exercise.sets.forEach(set => delete set[metric]);
             } else {
-                // Add metric
                 exercise.metrics.push(metric);
+                exercise.sets.forEach(set => { set[metric] = ''; });
             }
-            
-            // Update all sets to have/remove this metric
-            exercise.sets.forEach(set => {
-                if (index > -1) {
-                    delete set[metric];
-                } else {
-                    set[metric] = '';
-                }
-            });
-            
-            // Re-render but keep editor open
-            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
-            renderExercises();
-            if (editorWasOpen) {
-                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
-            }
-            
-            // Save as category default for future exercises in this workout type
             const categoryKey = `categoryMetrics_${currentWorkout.name}`;
             localStorage.setItem(categoryKey, JSON.stringify(exercise.metrics));
-            
             saveDraft();
+            renderExercises();
         };
-        
-        window.addCustomMetric = async function(exerciseId) {
-            const input = document.getElementById(`custom-metric-${exerciseId}`);
+
+        window.addCustomMetricPortal = async function(exerciseId) {
+            const input = document.getElementById(`portal-custom-metric-${exerciseId}`);
+            if (!input) return;
             const metricName = input.value.trim().toLowerCase();
-            
             if (!metricName) return;
-            
-            // Add to global custom metrics if not already there
+
             if (!customMetrics.includes(metricName) && !DEFAULT_METRICS.includes(metricName)) {
                 customMetrics.push(metricName);
-                
-                // Save to Supabase
-                await supabaseClient
-                    .from('custom_metrics')
-                    .insert({
-                        user_id: currentUser.id,
-                        metric_name: metricName
-                    });
+                await supabaseClient.from('custom_metrics').insert({ user_id: currentUser.id, metric_name: metricName });
             }
-            
-            // Add to this exercise
+
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (exercise && !exercise.metrics.includes(metricName)) {
                 exercise.metrics.push(metricName);
-                exercise.sets.forEach(set => {
-                    set[metricName] = '';
-                });
-            }
-            
-            input.value = '';
-            
-            // Re-render but keep editor open
-            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
-            renderExercises();
-            if (editorWasOpen) {
-                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
+                exercise.sets.forEach(set => { set[metricName] = ''; });
             }
             saveDraft();
-        };
-        
-        window.deleteCustomMetric = async function(metricName, exerciseId) {
-            if (!confirm(`Delete "${metricName}" from your custom metrics library? This won't affect exercises already using it.`)) {
-                return;
-            }
-            
-            // Remove from custom metrics array
-            const index = customMetrics.indexOf(metricName);
-            if (index > -1) {
-                customMetrics.splice(index, 1);
-            }
-            
-            // Delete from Supabase
-            await supabaseClient
-                .from('custom_metrics')
-                .delete()
-                .eq('user_id', currentUser.id)
-                .eq('metric_name', metricName);
-            
-            // Re-render and keep editor open
-            const editorWasOpen = !document.getElementById(`metrics-editor-${exerciseId}`).classList.contains('hidden');
+            closePortal();
             renderExercises();
-            if (editorWasOpen) {
-                document.getElementById(`metrics-editor-${exerciseId}`).classList.remove('hidden');
-            }
         };
-        
-        // Exercise Notes and Tags
+
+        window.deleteCustomMetric = async function(metricName, exerciseId) {
+            if (!confirm(`Delete "${metricName}" from your custom metrics?`)) return;
+            const idx = customMetrics.indexOf(metricName);
+            if (idx > -1) customMetrics.splice(idx, 1);
+            await supabaseClient.from('custom_metrics').delete().eq('user_id', currentUser.id).eq('metric_name', metricName);
+            closePortal();
+            renderExercises();
+        };
+
+        window.toggleTagsDropdown = function(exerciseId, anchorBtn) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+
+            const buildContent = () => {
+                const standardHTML = STANDARD_TAGS.map(tag => {
+                    const isSelected = (exercise.tags || []).includes(tag);
+                    return `<div onclick="toggleExerciseTagPortal(${exerciseId}, '${tag}')" 
+                                 style="padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; margin-bottom: 0.25rem; ${isSelected ? 'background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;' : 'background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: rgba(224, 224, 224, 0.8);'}">
+                                ${tag}
+                            </div>`;
+                }).join('');
+
+                const customTagsHTML = (exercise.tags || [])
+                    .filter(t => !STANDARD_TAGS.includes(t))
+                    .map(tag => `
+                        <div style="display: flex; gap: 0.25rem; align-items: center; margin-bottom: 0.25rem;">
+                            <div onclick="toggleExerciseTagPortal(${exerciseId}, '${tag}')" style="flex: 1; padding: 0.5rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; background: rgba(0, 245, 255, 0.2); border: 1px solid rgba(0, 245, 255, 0.5); color: #00f5ff;">${tag}</div>
+                            <button onclick="event.stopPropagation(); removeCustomTagPortal(${exerciseId}, '${tag}')" style="background: rgba(239, 68, 68, 0.2); color: #ef4444; border: none; border-radius: 0.25rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; cursor: pointer;">×</button>
+                        </div>`).join('');
+
+                return `<p class="text-xs font-bold mb-2">Select Tags:</p>
+                        <div style="max-height: 200px; overflow-y: auto; margin-bottom: 0.5rem;">
+                            ${standardHTML}${customTagsHTML}
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="portal-custom-tag-${exerciseId}" placeholder="Custom tag..." style="flex: 1; font-size: 0.875rem; padding: 0.375rem;" onclick="event.stopPropagation()">
+                            <button class="btn btn-primary" style="padding: 0.375rem 0.75rem; font-size: 0.875rem;" onclick="event.stopPropagation(); addCustomTagPortal(${exerciseId})">Add</button>
+                        </div>`;
+            };
+
+            anchorBtn.dataset.portalTrigger = '1';
+            createPortalDropdown(buildContent(), anchorBtn, { width: 240, maxHeight: 320 });
+        };
+
+        window.toggleExerciseTagPortal = function(exerciseId, tag) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            if (!exercise.tags) exercise.tags = [];
+            const idx = exercise.tags.indexOf(tag);
+            if (idx > -1) exercise.tags.splice(idx, 1);
+            else exercise.tags.push(tag);
+
+            // Persist tags to localStorage so library can use them
+            saveExerciseTags(exercise.name, exercise.tags);
+            saveDraft();
+            renderExercises();
+        };
+
+        window.removeCustomTagPortal = function(exerciseId, tag) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            const idx = exercise.tags.indexOf(tag);
+            if (idx > -1) exercise.tags.splice(idx, 1);
+            saveExerciseTags(exercise.name, exercise.tags);
+            saveDraft();
+            closePortal();
+            renderExercises();
+        };
+
+        window.addCustomTagPortal = function(exerciseId) {
+            const input = document.getElementById(`portal-custom-tag-${exerciseId}`);
+            if (!input) return;
+            const tag = input.value.trim();
+            if (!tag) return;
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise) return;
+            if (!exercise.tags) exercise.tags = [];
+            if (!exercise.tags.includes(tag)) exercise.tags.push(tag);
+            saveExerciseTags(exercise.name, exercise.tags);
+            saveDraft();
+            closePortal();
+            renderExercises();
+        };
+
+        // Persist exercise tags to localStorage so library grouping works across sessions
+        function saveExerciseTags(exerciseName, tags) {
+            try {
+                const saved = JSON.parse(localStorage.getItem('exerciseTags') || '{}');
+                saved[exerciseName] = tags;
+                localStorage.setItem('exerciseTags', JSON.stringify(saved));
+                // Update in-memory library too
+                const libEntry = exerciseLibrary.find(e => e.exercise_name === exerciseName);
+                if (libEntry) libEntry.tags = tags;
+            } catch(e) {}
+        }
+
+        window.updateSet = function(exerciseId, setIndex, field, value) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise && exercise.sets[setIndex]) { exercise.sets[setIndex][field] = value; saveDraft(); }
+        };
+
+        window.addSet = function(exerciseId) {
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (exercise) { exercise.sets.push(createEmptySet(exercise.metrics)); renderExercises(); saveDraft(); }
+        };
+
+        window.removeExercise = function(exerciseId) {
+            exercises = exercises.filter(ex => ex.id !== exerciseId);
+            renderExercises();
+            saveDraft();
+        };
+
         window.updateExerciseNotes = function(exerciseId, notes) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (exercise) {
-                exercise.notes = notes;
-                saveDraft();
-            }
+            if (exercise) { exercise.notes = notes; saveDraft(); }
         };
-        
-        window.toggleExerciseTag = function(exerciseId, tag) {
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (!exercise) return;
-            
-            if (!exercise.tags) exercise.tags = [];
-            
-            const index = exercise.tags.indexOf(tag);
-            if (index > -1) {
-                exercise.tags.splice(index, 1);
-            } else {
-                exercise.tags.push(tag);
-            }
-            
-            // Keep dropdown open
-            const dropdownWasOpen = !document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.contains('hidden');
-            renderExercises();
-            if (dropdownWasOpen) {
-                setTimeout(() => {
-                    document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.remove('hidden');
-                }, 10);
-            }
-            saveDraft();
-        };
-        
-        window.removeCustomTagFromExercise = function(exerciseId, tag) {
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (!exercise) return;
-            
-            const index = exercise.tags.indexOf(tag);
-            if (index > -1) {
-                exercise.tags.splice(index, 1);
-            }
-            
-            // Keep dropdown open
-            const dropdownWasOpen = !document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.contains('hidden');
-            renderExercises();
-            if (dropdownWasOpen) {
-                setTimeout(() => {
-                    document.getElementById(`tags-dropdown-${exerciseId}`)?.classList.remove('hidden');
-                }, 10);
-            }
-            saveDraft();
-        };
-        
+
         window.toggleExerciseCollapse = function(exerciseId) {
             const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (exercise) {
-                exercise.collapsed = !exercise.collapsed;
-                renderExercises();
-            }
+            if (exercise) { exercise.collapsed = !exercise.collapsed; renderExercises(); }
         };
-        
-        window.toggleTagsDropdown = function(exerciseId) {
-            const dropdown = document.getElementById(`tags-dropdown-${exerciseId}`);
-            if (dropdown) {
-                dropdown.classList.toggle('hidden');
-            }
-            
-            // Close other tags dropdowns
-            exercises.forEach(ex => {
-                if (ex.id !== exerciseId) {
-                    const other = document.getElementById(`tags-dropdown-${ex.id}`);
-                    if (other) other.classList.add('hidden');
-                }
-            });
-            
-            // Close all metrics dropdowns
-            exercises.forEach(ex => {
-                const metricsDropdown = document.getElementById(`metrics-editor-${ex.id}`);
-                if (metricsDropdown) metricsDropdown.classList.add('hidden');
-            });
-        };
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('[onclick*="toggleTagsDropdown"]') && 
-                !e.target.closest('[id^="tags-dropdown-"]') &&
-                !e.target.closest('[onclick*="showMetricsEditor"]') &&
-                !e.target.closest('[id^="metrics-editor-"]')) {
-                exercises.forEach(ex => {
-                    const tagsDropdown = document.getElementById(`tags-dropdown-${ex.id}`);
-                    const metricsDropdown = document.getElementById(`metrics-editor-${ex.id}`);
-                    if (tagsDropdown) tagsDropdown.classList.add('hidden');
-                    if (metricsDropdown) metricsDropdown.classList.add('hidden');
-                });
-            }
-        });
-        
-        window.addCustomTag = function(exerciseId) {
-            const input = document.getElementById(`custom-tag-${exerciseId}`);
-            const tag = input.value.trim();
-            
-            if (!tag) return;
-            
-            const exercise = exercises.find(ex => ex.id === exerciseId);
-            if (!exercise) return;
-            
-            if (!exercise.tags) exercise.tags = [];
-            
-            // Add tag if not already present
-            if (!exercise.tags.includes(tag)) {
-                exercise.tags.push(tag);
-            }
-            
-            input.value = '';
-            renderExercises();
-            saveDraft();
-            
-            // Reopen dropdown
-            setTimeout(() => {
-                const dropdown = document.getElementById(`tags-dropdown-${exerciseId}`);
-                if (dropdown) dropdown.classList.remove('hidden');
-            }, 50);
-        };
-        
+
         window.toggleExerciseHistory = async function(exerciseId, exerciseName) {
             const content = document.getElementById(`history-content-${exerciseId}`);
             const arrow = document.getElementById(`history-arrow-${exerciseId}`);
-            
             if (!content.classList.contains('hidden')) {
                 content.classList.add('hidden');
                 arrow.textContent = '▼';
                 return;
             }
-            
-            // Show and load history
             content.classList.remove('hidden');
             arrow.textContent = '▲';
             content.innerHTML = '<p class="text-xs text-gray">Loading...</p>';
-            
-            // Fetch last 3 times this exercise was performed
-            // First get exercises with this name
+
             const { data: exercisesData } = await supabaseClient
                 .from('exercises')
-                .select(`
-                    id,
-                    name,
-                    notes,
-                    workout_id,
-                    workouts!inner (
-                        id,
-                        start_time
-                    ),
-                    sets (*)
-                `)
+                .select('id, name, notes, workout_id, workouts!inner(id, start_time), sets(*)')
                 .eq('name', exerciseName)
                 .eq('workouts.user_id', currentUser.id)
                 .order('workouts(start_time)', { ascending: false })
                 .limit(3);
-            
-            // Also get notes from exercise library
-            const { data: libraryData } = await supabaseClient
-                .from('exercise_library')
-                .select('last_notes, last_performed')
-                .eq('user_id', currentUser.id)
-                .eq('exercise_name', exerciseName)
-                .single();
-            
+
             if (!exercisesData || exercisesData.length === 0) {
                 content.innerHTML = '<p class="text-xs text-gray">No previous history for this exercise</p>';
                 return;
             }
-            
-            // Build history display
-            let historyHTML = '';
-            exercisesData.forEach((exercise, idx) => {
+
+            content.innerHTML = exercisesData.map((exercise, idx) => {
                 const date = new Date(exercise.workouts.start_time);
-                
                 const setDetails = exercise.sets.map(s => {
                     const parts = [];
                     if (s.reps) parts.push(`${s.reps} reps`);
@@ -1587,166 +1467,15 @@
                     if (s.distance) parts.push(`${s.distance} mi`);
                     return parts.join(' @ ');
                 }).filter(Boolean).join(', ');
-                
-                // Show exercise notes if available
-                let notesHTML = '';
-                if (exercise.notes) {
-                    notesHTML = `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${exercise.notes}"</p>`;
-                }
-                
-                historyHTML += `
-                    <div style="margin-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; padding-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; border-bottom: ${idx < exercisesData.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'};">
-                        <p class="text-xs font-bold mb-1">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                        <p class="text-xs text-gray">${setDetails || 'No data'}</p>
-                        ${notesHTML}
-                    </div>
-                `;
-            });
-            
-            content.innerHTML = historyHTML || '<p class="text-xs text-gray">No history found</p>';
+                return `<div style="margin-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; padding-bottom: ${idx < exercisesData.length - 1 ? '0.75rem' : '0'}; border-bottom: ${idx < exercisesData.length - 1 ? '1px solid rgba(255, 255, 255, 0.1)' : 'none'};">
+                    <p class="text-xs font-bold mb-1">${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <p class="text-xs text-gray">${setDetails || 'No data'}</p>
+                    ${exercise.notes ? `<p class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${exercise.notes}"</p>` : ''}
+                </div>`;
+            }).join('');
         };
-        
-        // Exercise Autocomplete and Library
-        async function setupExerciseAutocomplete() {
-            console.log('=== SETUP AUTOCOMPLETE START ===');
-            
-            const input = document.getElementById('customExercise');
-            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
-            const libraryBtn = document.getElementById('libraryBtn');
-            const libraryDropdown = document.getElementById('libraryDropdown');
-            
-            if (!input || !autocompleteDropdown || !libraryBtn || !libraryDropdown) {
-                console.log('Missing elements, aborting setup');
-                return;
-            }
-            
-            // Load exercises directly from workouts - no exercise_library needed!
-            console.log('Loading exercises from past workouts...');
-            const { data: workouts } = await supabaseClient
-                .from('workouts')
-                .select('exercises(name, notes)')
-                .eq('user_id', currentUser.id);
-            
-            // Extract unique exercise names
-            const exerciseSet = new Set();
-            if (workouts) {
-                workouts.forEach(w => {
-                    if (w.exercises) {
-                        w.exercises.forEach(ex => {
-                            if (ex.name) exerciseSet.add(ex.name);
-                        });
-                    }
-                });
-            }
-            
-            exerciseLibrary = Array.from(exerciseSet).map(name => ({ exercise_name: name, tags: [] }));
-            console.log('Loaded exercises:', exerciseLibrary.length);
-            
-            // Remove old event listeners by cloning
-            const newInput = input.cloneNode(true);
-            input.parentNode.replaceChild(newInput, input);
-            const finalInput = document.getElementById('customExercise');
-            
-            const newLibraryBtn = libraryBtn.cloneNode(true);
-            libraryBtn.parentNode.replaceChild(newLibraryBtn, libraryBtn);
-            const finalLibraryBtn = document.getElementById('libraryBtn');
-            
-            // Autocomplete on input
-            finalInput.addEventListener('input', function() {
-                const value = this.value.trim().toLowerCase();
-                
-                if (!value) {
-                    autocompleteDropdown.classList.add('hidden');
-                    return;
-                }
-                
-                const matches = exerciseLibrary
-                    .filter(ex => ex.exercise_name.toLowerCase().includes(value))
-                    .slice(0, 8);
-                
-                if (matches.length > 0) {
-                    autocompleteDropdown.innerHTML = matches.map(ex => `
-                        <div style="padding: 0.75rem; cursor: pointer; border-bottom: 1px solid rgba(255, 255, 255, 0.05);" 
-                             onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'" 
-                             onmouseout="this.style.background='transparent'"
-                             onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')">
-                            <div class="text-sm font-bold">${ex.exercise_name}</div>
-                        </div>
-                    `).join('');
-                    autocompleteDropdown.classList.remove('hidden');
-                } else {
-                    autocompleteDropdown.classList.add('hidden');
-                }
-            });
-            
-            // Library button toggle
-            finalLibraryBtn.addEventListener('click', function(e) {
-                e.stopPropagation();
-                libraryDropdown.classList.toggle('hidden');
-                autocompleteDropdown.classList.add('hidden');
-                
-                if (!libraryDropdown.classList.contains('hidden')) {
-                    renderLibraryDropdown();
-                }
-            });
-            
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!finalInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
-                    autocompleteDropdown.classList.add('hidden');
-                }
-                if (!finalLibraryBtn.contains(e.target) && !libraryDropdown.contains(e.target)) {
-                    libraryDropdown.classList.add('hidden');
-                }
-            });
-            
-            console.log('=== SETUP COMPLETE ===');
-        }
-        
-        function renderLibraryDropdown() {
-            const libraryDropdown = document.getElementById('libraryDropdown');
-            
-            if (exerciseLibrary.length === 0) {
-                libraryDropdown.innerHTML = `
-                    <p class="text-xs text-gray">No exercises yet. Start adding exercises to your workouts!</p>
-                `;
-                return;
-            }
-            
-            // Sort alphabetically
-            const sorted = [...exerciseLibrary].sort((a, b) => 
-                a.exercise_name.localeCompare(b.exercise_name)
-            );
-            
-            let html = '<div style="display: flex; flex-direction: column; gap: 0.25rem;">';
-            sorted.forEach(ex => {
-                html += `
-                    <div onclick="selectExerciseFromLibrary('${ex.exercise_name.replace(/'/g, "\\'")}')" 
-                         style="padding: 0.5rem; background: rgba(255, 255, 255, 0.05); border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s;"
-                         onmouseover="this.style.background='rgba(0, 245, 255, 0.1)'"
-                         onmouseout="this.style.background='rgba(255, 255, 255, 0.05)'">
-                        ${ex.exercise_name}
-                    </div>
-                `;
-            });
-            html += '</div>';
-            
-            libraryDropdown.innerHTML = html;
-        }
-        
-        window.selectExerciseFromLibrary = function(exerciseName) {
-            const input = document.getElementById('customExercise');
-            const autocompleteDropdown = document.getElementById('exerciseAutocomplete');
-            const libraryDropdown = document.getElementById('libraryDropdown');
-            
-            addExercise(exerciseName);
-            
-            input.value = '';
-            autocompleteDropdown.classList.add('hidden');
-            libraryDropdown.classList.add('hidden');
-        };
-        
-        // Timer
+
+        // ── Timer ─────────────────────────────────────────────────────
         function toggleTimer() {
             if (timerInterval) {
                 clearInterval(timerInterval);
@@ -1763,60 +1492,44 @@
                 }, 1000);
             }
         }
-        
+
         function resetTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
+            if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
             timerSeconds = 90;
             updateTimerDisplay();
         }
-        
+
         function updateTimerDisplay() {
             const mins = Math.floor(timerSeconds / 60);
             const secs = timerSeconds % 60;
             document.getElementById('timerDisplay').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
         }
-        
-        // Finish/Cancel Workout
+
+        // ── Finish/Cancel ─────────────────────────────────────────────
         function cancelWorkout() {
-            if (confirm('Cancel workout? All progress will be lost.')) {
-                clearDraft();
+            if (confirm('Cancel workout? Your draft will be saved and you can resume later.')) {
+                // Don't clear draft on cancel — just go home
                 showHome();
             }
         }
-        
+
         async function finishWorkout() {
             if (exercises.length === 0) {
                 alert('Add at least one exercise before finishing');
                 return;
             }
-            
-            // If editing an existing workout, delete it first
+
             if (currentWorkout.editingId) {
-                await supabaseClient
-                    .from('workouts')
-                    .delete()
-                    .eq('id', currentWorkout.editingId);
-                
+                await supabaseClient.from('workouts').delete().eq('id', currentWorkout.editingId);
                 delete currentWorkout.editingId;
             }
-            
+
             const now = new Date();
             const timeSinceStart = now - workoutStartTime;
             const hoursSinceStart = timeSinceStart / (1000 * 60 * 60);
-            
-            let endTime;
-            if (hoursSinceStart >= 0 && hoursSinceStart < 6) {
-                endTime = now;
-            } else {
-                endTime = new Date(workoutStartTime.getTime() + 45 * 60000);
-            }
-            
+            const endTime = (hoursSinceStart >= 0 && hoursSinceStart < 6) ? now : new Date(workoutStartTime.getTime() + 45 * 60000);
             const notes = document.getElementById('workoutNotes').value;
-            
-            // Insert workout
+
             const { data: workout, error: workoutError } = await supabaseClient
                 .from('workouts')
                 .insert({
@@ -1824,76 +1537,54 @@
                     type: currentWorkout.name,
                     start_time: workoutStartTime.toISOString(),
                     end_time: endTime.toISOString(),
-                    notes: notes
-                })
-                .select()
-                .single();
-            
-            if (workoutError) {
-                alert('Error saving workout');
-                return;
-            }
-            
-            // Insert exercises and sets
+                    notes
+                }).select().single();
+
+            if (workoutError) { alert('Error saving workout'); return; }
+
             for (let i = 0; i < exercises.length; i++) {
                 const ex = exercises[i];
-                
-                const { data: exercise, error: exError} = await supabaseClient
+                const { data: exercise } = await supabaseClient
                     .from('exercises')
-                    .insert({
-                        workout_id: workout.id,
-                        name: ex.name,
-                        exercise_order: i,
-                        notes: ex.notes || null
-                    })
-                    .select()
-                    .single();
-                
+                    .insert({ workout_id: workout.id, name: ex.name, exercise_order: i, notes: ex.notes || null })
+                    .select().single();
+
                 if (exercise) {
                     for (let j = 0; j < ex.sets.length; j++) {
                         const set = ex.sets[j];
-                        await supabaseClient
-                            .from('sets')
-                            .insert({
-                                exercise_id: exercise.id,
-                                set_order: j,
-                                reps: set.reps || null,
-                                weight: set.weight || null,
-                                time: set.time || null,
-                                distance: set.distance || null,
-                                speed: set.speed || null,
-                                incline: set.incline || null,
-                                notes: set.notes || null
-                            });
+                        await supabaseClient.from('sets').insert({
+                            exercise_id: exercise.id,
+                            set_order: j,
+                            reps: set.reps || null,
+                            weight: set.weight || null,
+                            time: set.time || null,
+                            distance: set.distance || null,
+                            speed: set.speed || null,
+                            incline: set.incline || null,
+                            notes: set.notes || null
+                        });
                     }
                 }
             }
-            
+
             clearDraft();
             alert('Workout saved!');
             showHome();
         }
-        
-        // History
+
+        // ── History ───────────────────────────────────────────────────
         async function renderHistory(filterDate = null) {
             const container = document.getElementById('historyContent');
             container.innerHTML = '';
-            
+
             const { data: workouts } = await supabaseClient
                 .from('workouts')
-                .select(`
-                    *,
-                    exercises (
-                        *,
-                        sets (*)
-                    )
-                `)
+                .select('*, exercises(*, sets(*))')
                 .eq('user_id', currentUser.id)
                 .order('start_time', { ascending: false });
-            
+
             if (!workouts) return;
-            
-            // Calendar
+
             const calendarDiv = document.createElement('div');
             calendarDiv.className = 'exercise-box mb-4';
             calendarDiv.innerHTML = `
@@ -1903,44 +1594,42 @@
                     <button class="btn btn-secondary" onclick="nextMonth()" style="padding: 0.5rem 1rem; font-size: 1.25rem;">→</button>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.5rem; margin-bottom: 0.5rem;">
-                    ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => 
-                        `<div style="text-align: center; font-size: 0.75rem; font-weight: 600; color: #64748b; padding: 0.5rem;">${day}</div>`
+                    ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d =>
+                        `<div style="text-align: center; font-size: 0.75rem; font-weight: 600; color: #64748b; padding: 0.5rem;">${d}</div>`
                     ).join('')}
                 </div>
-                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 0.5rem;"></div>
-            `;
+                <div id="calendarGrid" style="display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 1fr; gap: 0.5rem;"></div>`;
             container.appendChild(calendarDiv);
-            
             renderCalendar(workouts);
-            
-            // Recent workouts
+
             const recentDiv = document.createElement('div');
             recentDiv.className = 'exercise-box';
-            
-            let workoutsToShow = filterDate 
+
+            let workoutsToShow = filterDate
                 ? workouts.filter(w => new Date(w.start_time).toDateString() === filterDate)
                 : workouts.slice(0, 10);
-            
-            let sectionTitle = filterDate 
+
+            let sectionTitle = filterDate
                 ? `Workouts on ${new Date(filterDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
                 : 'Recent Workouts';
-            
+
             if (workoutsToShow.length === 0) {
                 recentDiv.innerHTML = `<h2 class="font-bold mb-4">${sectionTitle}</h2><p class="text-gray text-center" style="padding: 2rem;">No workouts ${filterDate ? 'on this date' : 'yet'}</p>`;
             } else {
                 recentDiv.innerHTML = `<h2 class="font-bold mb-4">${sectionTitle}</h2>`;
-                
                 workoutsToShow.forEach(workout => {
                     const cat = workoutCategories.find(c => c.name === workout.type);
                     const start = new Date(workout.start_time);
                     const end = new Date(workout.end_time);
                     const duration = Math.floor((end - start) / 60000);
-                    
+
                     const workoutDiv = document.createElement('div');
-                    workoutDiv.style.cssText = 'border: 2px solid #e2e8f0; padding: 1rem; margin-bottom: 1rem; border-radius: 0.5rem; position: relative; cursor: pointer; transition: all 0.2s;';
+                    workoutDiv.style.cssText = 'border: 2px solid rgba(0, 245, 255, 0.15); padding: 1rem; margin-bottom: 1rem; border-radius: 0.75rem; position: relative; cursor: pointer; transition: all 0.2s;';
                     workoutDiv.onmouseover = () => workoutDiv.style.borderColor = 'rgba(0, 245, 255, 0.4)';
-                    workoutDiv.onmouseout = () => workoutDiv.style.borderColor = '#e2e8f0';
-                    workoutDiv.onclick = () => window.editWorkout('${workout.id}');
+                    workoutDiv.onmouseout = () => workoutDiv.style.borderColor = 'rgba(0, 245, 255, 0.15)';
+                    // FIX: use a proper function reference, not a template literal
+                    workoutDiv.onclick = () => window.editWorkout(workout.id);
+
                     workoutDiv.innerHTML = `
                         <div style="position: absolute; top: 0.5rem; right: 0.5rem;">
                             <button onclick="event.stopPropagation(); toggleWorkoutMenu('${workout.id}')" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2); color: #94a3b8; cursor: pointer; font-size: 0.875rem; padding: 0.25rem 0.5rem; border-radius: 0.25rem;">...</button>
@@ -1952,13 +1641,11 @@
                         <div class="flex mb-2" style="justify-content: space-between; padding-right: 3rem;">
                             <div class="flex gap-2" style="align-items: center;">
                                 <span style="background: ${cat ? cat.color : '#3b82f6'}; color: white; padding: 0.25rem 0.5rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600;">${workout.type}</span>
-                                <div>
-                                    <p class="text-sm text-gray">${start.toLocaleDateString()}</p>
-                                </div>
+                                <p class="text-sm text-gray">${start.toLocaleDateString()}</p>
                             </div>
                             <div class="text-sm text-gray" style="text-align: right;">
                                 <div>${duration} min</div>
-                                <div>${workout.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)} sets</div>
+                                <div>${workout.exercises.reduce((s, ex) => s + ex.sets.length, 0)} sets</div>
                             </div>
                         </div>
                         <div class="text-sm">
@@ -1973,8 +1660,7 @@
                                         if (s.incline) parts.push(`${s.incline}% incline`);
                                         return parts.join(', ');
                                     }).filter(Boolean).join(' | ');
-                                    const notesHTML = ex.notes ? `<div class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.notes}"</div>` : '';
-                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${details || 'No data'}${notesHTML}</div>`;
+                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${details || 'No data'}</div>`;
                                 } else {
                                     const setDetails = ex.sets.map(s => {
                                         if (s.reps && s.weight) return `${s.reps} reps @ ${s.weight} lbs`;
@@ -1982,162 +1668,117 @@
                                         if (s.weight) return `${s.weight} lbs`;
                                         return '';
                                     }).filter(Boolean).join(', ');
-                                    const notesHTML = ex.notes ? `<div class="text-xs text-gray" style="font-style: italic; margin-top: 0.25rem;">"${ex.notes}"</div>` : '';
-                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}${notesHTML}</div>`;
+                                    return `<div style="margin-bottom: 0.5rem;"><strong>${ex.name}</strong>: ${setDetails || '—'}</div>`;
                                 }
                             }).join('')}
                         </div>
-                        ${workout.notes ? `<div class="text-sm text-gray mt-2" style="font-style: italic;">"${workout.notes}"</div>` : ''}
-                    `;
+                        ${workout.notes ? `<div class="text-sm text-gray mt-2" style="font-style: italic;">"${workout.notes}"</div>` : ''}`;
                     recentDiv.appendChild(workoutDiv);
                 });
             }
-            
             container.appendChild(recentDiv);
         }
-        
+
         function renderCalendar(workouts) {
             const today = new Date();
             const firstDay = new Date(viewingYear, viewingMonth, 1);
             const lastDay = new Date(viewingYear, viewingMonth + 1, 0);
             const daysInMonth = lastDay.getDate();
             const startingDayOfWeek = firstDay.getDay();
-            
+
             const workoutsByDate = {};
             workouts.forEach(workout => {
                 const date = new Date(workout.start_time).toDateString();
                 if (!workoutsByDate[date]) workoutsByDate[date] = [];
                 workoutsByDate[date].push(workout);
             });
-            
-            document.getElementById('monthYear').textContent = new Date(viewingYear, viewingMonth, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            
+
+            document.getElementById('monthYear').textContent = new Date(viewingYear, viewingMonth, 1)
+                .toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
             const calendarGrid = document.getElementById('calendarGrid');
             calendarGrid.innerHTML = '';
-            
+
             for (let i = 0; i < startingDayOfWeek; i++) {
-                const emptyCell = document.createElement('div');
-                emptyCell.style.aspectRatio = '1';
-                calendarGrid.appendChild(emptyCell);
+                const empty = document.createElement('div');
+                empty.style.aspectRatio = '1';
+                calendarGrid.appendChild(empty);
             }
-            
+
             for (let day = 1; day <= daysInMonth; day++) {
                 const date = new Date(viewingYear, viewingMonth, day);
                 const dateStr = date.toDateString();
                 const dayWorkouts = workoutsByDate[dateStr] || [];
                 const isToday = day === today.getDate() && viewingMonth === today.getMonth() && viewingYear === today.getFullYear();
-                
+
                 const dayCell = document.createElement('div');
-                dayCell.style.cssText = `
-                    aspect-ratio: 1;
-                    border: 1px solid ${isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)'};
-                    border-radius: 0.5rem;
-                    padding: 0.5rem;
-                    background: ${isToday ? 'rgba(0, 245, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)'};
-                    backdrop-filter: blur(10px);
-                    cursor: ${dayWorkouts.length > 0 ? 'pointer' : 'default'};
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
-                    min-height: 0;
-                    max-height: 100%;
-                    color: #e0e0e0;
-                    transition: all 0.3s;
-                `;
-                
+                dayCell.style.cssText = `aspect-ratio: 1; border: 1px solid ${isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)'}; border-radius: 0.5rem; padding: 0.5rem; background: ${isToday ? 'rgba(0, 245, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)'}; backdrop-filter: blur(10px); cursor: ${dayWorkouts.length > 0 ? 'pointer' : 'default'}; overflow: hidden; display: flex; flex-direction: column; min-height: 0; max-height: 100%; color: #e0e0e0; transition: all 0.3s;`;
+
                 if (dayWorkouts.length > 0) {
                     dayCell.onclick = () => showHistory(dateStr, true);
-                    dayCell.onmouseover = () => {
-                        dayCell.style.background = 'rgba(0, 245, 255, 0.15)';
-                        dayCell.style.borderColor = 'rgba(0, 245, 255, 0.5)';
-                    };
-                    dayCell.onmouseout = () => {
-                        dayCell.style.background = isToday ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)';
-                        dayCell.style.borderColor = isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)';
-                    };
+                    dayCell.onmouseover = () => { dayCell.style.background = 'rgba(0, 245, 255, 0.15)'; dayCell.style.borderColor = 'rgba(0, 245, 255, 0.5)'; };
+                    dayCell.onmouseout = () => { dayCell.style.background = isToday ? 'rgba(0, 245, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)'; dayCell.style.borderColor = isToday ? 'rgba(0, 245, 255, 0.4)' : 'rgba(0, 245, 255, 0.15)'; };
                 }
-                
+
                 const workoutLabels = dayWorkouts.slice(0, 3).map(w => {
                     const cat = workoutCategories.find(c => c.name === w.type);
                     return `<span style="background: ${cat ? cat.color : '#3b82f6'}; color: white; padding: 0.0625rem 0.25rem; border-radius: 0.25rem; font-size: 0.5rem; font-weight: 600; margin-bottom: 0.125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0;">${w.type}</span>`;
                 }).join('');
-                
-                const extraCount = dayWorkouts.length > 3 ? `<span style="font-size: 0.5rem; color: #64748b;">+${dayWorkouts.length - 3}</span>` : '';
-                
+
                 dayCell.innerHTML = `
                     <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.125rem; line-height: 1;">${day}</div>
-                    <div style="display: flex; flex-direction: column; gap: 0.125rem; overflow: hidden;">${workoutLabels}${extraCount}</div>
-                `;
+                    <div style="display: flex; flex-direction: column; gap: 0.125rem; overflow: hidden;">${workoutLabels}${dayWorkouts.length > 3 ? `<span style="font-size: 0.5rem; color: #64748b;">+${dayWorkouts.length - 3}</span>` : ''}</div>`;
                 calendarGrid.appendChild(dayCell);
             }
         }
-        
+
         window.previousMonth = function() {
             viewingMonth--;
-            if (viewingMonth < 0) {
-                viewingMonth = 11;
-                viewingYear--;
-            }
-            showHistory(null, true); // Keep the month we just set
+            if (viewingMonth < 0) { viewingMonth = 11; viewingYear--; }
+            showHistory(null, true);
         };
-        
+
         window.nextMonth = function() {
             viewingMonth++;
-            if (viewingMonth > 11) {
-                viewingMonth = 0;
-                viewingYear++;
-            }
-            showHistory(null, true); // Keep the month we just set
+            if (viewingMonth > 11) { viewingMonth = 0; viewingYear++; }
+            showHistory(null, true);
         };
-        
-        // Edit Past Workout
+
+        // ── Edit workout ──────────────────────────────────────────────
         window.editWorkout = async function(workoutId) {
-            // Load the full workout with exercises and sets
             const { data: workout } = await supabaseClient
                 .from('workouts')
-                .select(`
-                    *,
-                    exercises (
-                        *,
-                        sets (*)
-                    )
-                `)
+                .select('*, exercises(*, sets(*))')
                 .eq('id', workoutId)
                 .single();
-            
-            if (!workout) {
-                alert('Could not load workout');
-                return;
-            }
-            
-            // Find the category
+
+            if (!workout) { alert('Could not load workout'); return; }
+
             const category = workoutCategories.find(c => c.name === workout.type);
-            if (!category) {
-                alert('Workout category not found');
-                return;
-            }
-            
-            // Set up editing mode
-            currentWorkout = category;
-            currentWorkout.editingId = workoutId; // Flag that we're editing
+            if (!category) { alert('Workout category not found'); return; }
+
+            currentWorkout = { ...category, editingId: workoutId };
             workoutStartTime = new Date(workout.start_time);
-            
-            // Convert exercises from database format to app format
+
             exercises = workout.exercises.map(ex => {
-                // Get all unique metric fields from sets
+                // FIX: always fall back to default metrics if no non-null fields found
                 const metricsSet = new Set();
                 ex.sets.forEach(set => {
                     Object.keys(set).forEach(key => {
-                        if (!['id', 'exercise_id', 'set_order', 'created_at'].includes(key) && set[key] !== null) {
+                        if (!['id', 'exercise_id', 'set_order', 'created_at', 'notes'].includes(key) && set[key] !== null && set[key] !== undefined) {
                             metricsSet.add(key);
                         }
                     });
                 });
-                
+
+                const metrics = metricsSet.size > 0
+                    ? Array.from(metricsSet)
+                    : (exercisePreferences[ex.name] || ['reps', 'weight']);
+
                 return {
                     id: ex.id,
                     name: ex.name,
-                    metrics: Array.from(metricsSet),
+                    metrics,
                     sets: ex.sets.map(s => ({
                         reps: s.reps || '',
                         weight: s.weight || '',
@@ -2147,53 +1788,42 @@
                         incline: s.incline || '',
                         notes: s.notes || ''
                     })),
-                    notes: '', // We'll need to store this separately if we want exercise notes in edit
-                    tags: [] // Same with tags
+                    notes: ex.notes || '',
+                    tags: []
                 };
             });
-            
-            // Populate form fields
+
             const startDate = new Date(workout.start_time);
             document.getElementById('workoutDate').value = startDate.toISOString().split('T')[0];
             document.getElementById('workoutTime').value = startDate.toTimeString().slice(0, 5);
             document.getElementById('workoutNotes').value = workout.notes || '';
-            
             document.getElementById('workoutColorDot').style.background = category.color;
             document.getElementById('workoutTitle').textContent = `Edit: ${category.name}`;
-            
+
             updateWorkoutInfo();
             renderPreviousWorkouts();
             renderExercises();
             showWorkoutScreen();
+            setupExerciseAutocomplete();
         };
-        
+
         window.toggleWorkoutMenu = function(workoutId) {
             const menu = document.getElementById(`workout-menu-${workoutId}`);
-            if (menu) {
-                menu.classList.toggle('hidden');
-            }
+            if (menu) menu.classList.toggle('hidden');
         };
-        
+
         window.deleteWorkout = async function(workoutId) {
             if (confirm('Delete this workout? This cannot be undone.')) {
-                const { error } = await supabaseClient
-                    .from('workouts')
-                    .delete()
-                    .eq('id', workoutId);
-                
-                if (!error) {
-                    showHistory();
-                }
+                const { error } = await supabaseClient.from('workouts').delete().eq('id', workoutId);
+                if (!error) showHistory();
             }
         };
-        
-        // Settings
+
+        // ── Settings ──────────────────────────────────────────────────
         function renderSettings() {
             document.getElementById('userEmailDisplay').textContent = `Logged in as: ${currentUser.email}`;
-            
             const categoryList = document.getElementById('categoryList');
             categoryList.innerHTML = '';
-            
             workoutCategories.forEach(cat => {
                 const div = document.createElement('div');
                 div.className = 'flex gap-2 mb-2';
@@ -2201,31 +1831,19 @@
                 div.innerHTML = `
                     <span class="color-dot" style="background: ${cat.color};"></span>
                     <span style="flex: 1;">${cat.name}</span>
-                    <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="deleteCategory('${cat.id}')">✕</button>
-                `;
+                    <button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" onclick="deleteCategory('${cat.id}')">✕</button>`;
                 categoryList.appendChild(div);
             });
         }
-        
+
         async function addCategory() {
             const name = document.getElementById('newCategoryName').value.trim();
             const color = document.getElementById('newCategoryColor').value;
-            
-            if (!name) {
-                alert('Please enter a category name');
-                return;
-            }
-            
+            if (!name) { alert('Please enter a category name'); return; }
             const { data, error } = await supabaseClient
                 .from('workout_categories')
-                .insert({
-                    user_id: currentUser.id,
-                    name: name,
-                    color: color
-                })
-                .select()
-                .single();
-            
+                .insert({ user_id: currentUser.id, name, color })
+                .select().single();
             if (data) {
                 workoutCategories.push(data);
                 document.getElementById('newCategoryName').value = '';
@@ -2235,42 +1853,23 @@
                 alert('Error adding category');
             }
         }
-        
+
         window.deleteCategory = async function(categoryId) {
             if (confirm('Delete this category? Workouts using it will remain.')) {
-                const { error } = await supabaseClient
-                    .from('workout_categories')
-                    .delete()
-                    .eq('id', categoryId);
-                
-                if (!error) {
-                    workoutCategories = workoutCategories.filter(c => c.id !== categoryId);
-                    renderSettings();
-                }
+                const { error } = await supabaseClient.from('workout_categories').delete().eq('id', categoryId);
+                if (!error) { workoutCategories = workoutCategories.filter(c => c.id !== categoryId); renderSettings(); }
             }
         };
-        
-        // Import/Export Functions
+
+        // ── Import / Export ───────────────────────────────────────────
         async function exportData() {
             const { data: workouts } = await supabaseClient
                 .from('workouts')
-                .select(`
-                    *,
-                    exercises (
-                        *,
-                        sets (*)
-                    )
-                `)
+                .select('*, exercises(*, sets(*))')
                 .eq('user_id', currentUser.id)
                 .order('start_time', { ascending: false });
-            
-            if (!workouts) {
-                alert('No data to export');
-                return;
-            }
-            
-            const dataStr = JSON.stringify(workouts, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            if (!workouts) { alert('No data to export'); return; }
+            const dataBlob = new Blob([JSON.stringify(workouts, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(dataBlob);
             const link = document.createElement('a');
             link.href = url;
@@ -2279,130 +1878,85 @@
             URL.revokeObjectURL(url);
             alert('Data exported successfully!');
         }
-        
+
         async function importData(event) {
             const file = event.target.files[0];
             if (!file) return;
-            
             const reader = new FileReader();
             reader.onload = async function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    
-                    if (!Array.isArray(data)) {
-                        alert('Invalid data format');
-                        return;
-                    }
-                    
+                    if (!Array.isArray(data)) { alert('Invalid data format'); return; }
                     let imported = 0;
-                    
                     for (const oldWorkout of data) {
-                        // Convert old format to new Supabase format
-                        const startTime = oldWorkout.startTime || new Date().toISOString();
-                        const endTime = oldWorkout.endTime || new Date().toISOString();
-                        const workoutType = oldWorkout.type || 'Chest';
-                        const notes = oldWorkout.notes || '';
-                        
-                        // Insert workout
                         const { data: newWorkout, error: workoutError } = await supabaseClient
                             .from('workouts')
                             .insert({
                                 user_id: currentUser.id,
-                                type: workoutType,
-                                start_time: startTime,
-                                end_time: endTime,
-                                notes: notes
-                            })
-                            .select()
-                            .single();
-                        
+                                type: oldWorkout.type || 'Chest',
+                                start_time: oldWorkout.startTime || new Date().toISOString(),
+                                end_time: oldWorkout.endTime || new Date().toISOString(),
+                                notes: oldWorkout.notes || ''
+                            }).select().single();
                         if (workoutError || !newWorkout) continue;
-                        
-                        // Insert exercises
                         if (oldWorkout.exercises && Array.isArray(oldWorkout.exercises)) {
                             for (let i = 0; i < oldWorkout.exercises.length; i++) {
-                                const oldExercise = oldWorkout.exercises[i];
-                                
-                                const { data: newExercise } = await supabaseClient
+                                const oldEx = oldWorkout.exercises[i];
+                                const { data: newEx } = await supabaseClient
                                     .from('exercises')
-                                    .insert({
-                                        workout_id: newWorkout.id,
-                                        name: oldExercise.name,
-                                        exercise_order: i
-                                    })
-                                    .select()
-                                    .single();
-                                
-                                if (newExercise && oldExercise.sets && Array.isArray(oldExercise.sets)) {
-                                    for (let j = 0; j < oldExercise.sets.length; j++) {
-                                        const oldSet = oldExercise.sets[j];
-                                        
-                                        await supabaseClient
-                                            .from('sets')
-                                            .insert({
-                                                exercise_id: newExercise.id,
-                                                set_order: j,
-                                                reps: oldSet.reps || null,
-                                                weight: oldSet.weight || null,
-                                                time: oldSet.time || null,
-                                                distance: oldSet.distance || null,
-                                                speed: oldSet.speed || null,
-                                                incline: oldSet.incline || null,
-                                                notes: oldSet.notes || null
-                                            });
+                                    .insert({ workout_id: newWorkout.id, name: oldEx.name, exercise_order: i })
+                                    .select().single();
+                                if (newEx && oldEx.sets && Array.isArray(oldEx.sets)) {
+                                    for (let j = 0; j < oldEx.sets.length; j++) {
+                                        const s = oldEx.sets[j];
+                                        await supabaseClient.from('sets').insert({
+                                            exercise_id: newEx.id, set_order: j,
+                                            reps: s.reps || null, weight: s.weight || null,
+                                            time: s.time || null, distance: s.distance || null,
+                                            speed: s.speed || null, incline: s.incline || null,
+                                            notes: s.notes || null
+                                        });
                                     }
                                 }
                             }
                         }
-                        
                         imported++;
                     }
-                    
                     alert(`Successfully imported ${imported} workouts!`);
-                    event.target.value = ''; // Reset file input
-                } catch (error) {
-                    console.error('Import error:', error);
-                    alert('Error importing data: ' + error.message);
+                    event.target.value = '';
+                } catch (err) {
+                    alert('Error importing data: ' + err.message);
                 }
             };
             reader.readAsText(file);
         }
-        
-        // Draft Management Functions
+
+        // ── Draft management ──────────────────────────────────────────
         function saveDraft() {
             if (!currentWorkout) return;
-            
             const draft = {
                 categoryId: currentWorkout.id,
                 categoryName: currentWorkout.name,
                 categoryColor: currentWorkout.color,
-                exercises: exercises,
+                editingId: currentWorkout.editingId || null,
+                exercises,
                 startTime: workoutStartTime.toISOString(),
                 date: document.getElementById('workoutDate').value,
                 time: document.getElementById('workoutTime').value,
                 notes: document.getElementById('workoutNotes').value,
                 timestamp: new Date().toISOString()
             };
-            
             localStorage.setItem('workoutDraft', JSON.stringify(draft));
         }
-        
+
         function loadDraft() {
-            const draftStr = localStorage.getItem('workoutDraft');
-            if (!draftStr) return null;
-            
-            try {
-                return JSON.parse(draftStr);
-            } catch (e) {
-                return null;
-            }
+            try { return JSON.parse(localStorage.getItem('workoutDraft')); }
+            catch(e) { return null; }
         }
-        
-        function clearDraft() {
-            localStorage.removeItem('workoutDraft');
-        }
-        
-        
+
+        function clearDraft() { localStorage.removeItem('workoutDraft'); }
+
+        // ── Boot ──────────────────────────────────────────────────────
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
