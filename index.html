@@ -995,7 +995,12 @@
                     <div class="flex mb-2" style="justify-content: space-between; align-items: center;">
                         <div class="flex gap-2" style="align-items: center; flex: 1; flex-wrap: wrap;">
                             <button onclick="toggleExerciseCollapse(${ex.id})" style="background: none; border: none; color: rgba(224, 224, 224, 0.6); cursor: pointer; font-size: 1rem; padding: 0.25rem;">${isCollapsed ? '▶' : '▼'}</button>
-                            <h3 class="font-bold">${ex.name}</h3>
+                            <h3 class="font-bold" contenteditable="true" spellcheck="false"
+                                id="exercise-name-${ex.id}"
+                                onblur="renameExercise(${ex.id}, this.textContent.trim())"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+                                style="outline:none; border-bottom: 1px dashed rgba(0,245,255,0.3); cursor:text; min-width:2rem;"
+                                title="Click to rename">${ex.name}</h3>
                             
                             <!-- Tags button -->
                             <div style="position: relative; flex-shrink: 0;">
@@ -1542,6 +1547,16 @@
             if (exercise) { exercise.collapsed = !exercise.collapsed; renderExercises(); }
         };
 
+        window.renameExercise = function(exerciseId, newName) {
+            if (!newName) return;
+            const exercise = exercises.find(ex => ex.id === exerciseId);
+            if (!exercise || exercise.name === newName) return;
+            exercise.name = newName;
+            // Clear cache so history reloads under new name
+            delete exerciseHistoryCache[newName];
+            saveDraft();
+        };
+
         window.toggleExerciseHistory = async function(exerciseId, exerciseName) {
             const content = document.getElementById(`history-content-${exerciseId}`);
             const arrow = document.getElementById(`history-arrow-${exerciseId}`);
@@ -1864,8 +1879,11 @@
 
             if (!workout) { alert('Could not load workout'); return; }
 
-            const category = workoutCategories.find(c => c.name === workout.type);
-            if (!category) { alert('Workout category not found'); return; }
+            const category = workoutCategories.find(c => c.name === workout.type) || {
+                id: null,
+                name: workout.type,
+                color: '#64748b' // neutral gray for deleted categories
+            };
 
             currentWorkout = { ...category, editingId: workoutId };
             workoutStartTime = new Date(workout.start_time);
