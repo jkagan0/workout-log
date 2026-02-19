@@ -1550,30 +1550,13 @@
             if (exercise) { exercise.collapsed = !exercise.collapsed; renderExercises(); }
         };
 
-        window.renameExercise = async function(exerciseId, newName) {
+        window.renameExercise = function(exerciseId, newName) {
             if (!newName) return;
             const exercise = exercises.find(ex => ex.id === exerciseId);
             if (!exercise || exercise.name === newName) return;
-
-            const oldName = exercise.name;
+            delete exerciseHistoryCache[exercise.name];
             exercise.name = newName;
-            delete exerciseHistoryCache[oldName];
             saveDraft();
-
-            // If editing a past workout, persist the rename to Supabase immediately
-            if (currentWorkout && currentWorkout.editingId) {
-                const { error } = await supabaseClient
-                    .from('exercises')
-                    .update({ name: newName })
-                    .eq('id', exerciseId);
-
-                if (error) {
-                    // Roll back on failure
-                    exercise.name = oldName;
-                    saveDraft();
-                    alert('Failed to save exercise name: ' + error.message);
-                }
-            }
         };
 
         window.toggleExerciseHistory = async function(exerciseId, exerciseName) {
@@ -1688,9 +1671,13 @@
 
             for (let i = 0; i < exercises.length; i++) {
                 const ex = exercises[i];
+                // If editing, read the name directly from the DOM in case it was renamed
+                const nameEl = document.getElementById(`exercise-name-${ex.id}`);
+                const finalName = (nameEl && nameEl.textContent.trim()) ? nameEl.textContent.trim() : ex.name;
+
                 const { data: exercise } = await supabaseClient
                     .from('exercises')
-                    .insert({ workout_id: workout.id, name: ex.name, exercise_order: i, notes: ex.notes || null })
+                    .insert({ workout_id: workout.id, name: finalName, exercise_order: i, notes: ex.notes || null })
                     .select().single();
 
                 if (exercise) {
